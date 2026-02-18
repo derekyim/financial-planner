@@ -11,8 +11,9 @@ load_env()
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from openai import OpenAI
+from typing import Optional
 import os
+import traceback
 
 app = FastAPI()
 
@@ -23,22 +24,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_client = None
+_agent_initialized = False
 
 
-def get_openai_client():
-    """Get or create OpenAI client with lazy initialization."""
-    global _client
-    if _client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
-        _client = OpenAI(api_key=api_key)
-    return _client
+def _ensure_agent():
+    """Lazy-initialize the financial agent on first request."""
+    global _agent_initialized
+    if _agent_initialized:
+        return
+
+    from agents.financial_agent import setup_agent
+
+    creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json")
+    spreadsheet_url = os.getenv(
+        "SPREADSHEET_URL",
+        "https://docs.google.com/spreadsheets/d/1yopikoACz8oY32Zv9FrGhb64_PlDwcO1e02WePBr4uM/edit",
+    )
+
+    if not Path(creds_path).is_absolute():
+        creds_path = str(Path(_backend_dir) / creds_path)
+
+    setup_agent(
+        credentials_path=creds_path,
+        spreadsheet_url=spreadsheet_url,
+    )
+    _agent_initialized = True
 
 
 class ChatRequest(BaseModel):
     message: str
+    thread_id: Optional[str] = None
+    user_id: Optional[str] = "default_user"
 
 
 @app.get("/")
@@ -47,41 +63,20 @@ def root():
 
 
 @app.post("/api/chat")
-def chat(request: ChatRequest):
+def chat_endpoint(request: ChatRequest):
     try:
-        client = get_openai_client()
-        user_message = request.message
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a supportive mental health coach.\n\n"
-                        "Scope:\n"
-                        "- You provide guidance on mental health, emotional regulation, stress, motivation, habits, and personal wellbeing.\n"
-                        "- You do NOT answer questions outside this scope. \n\n"
-                        "Safety & Routing Rules:\n"
-                        "1. Non-mental-health topics:\n"
-                        "   If the user asks about anything unrelated to mental or emotional wellbeing, "
-                        "politely state that it is outside your expertise and direct them to https://chatgpt.com.\n\n"
-                        "2. Crisis or self-harm:\n"
-                        "   If the user expresses suicidal thoughts, self-harm, violent intent, or immediate danger, "
-                        "respond with empathy and clearly encourage them to call 911 or go to their local emergency room immediately. "
-                        "Do not provide advice that could enable harm.\n\n"
-                        "3. Relationship-specific issues:\n"
-                        "   If the main issue concerns a romantic or partner relationship, acknowledge their feelings "
-                        "and refer them to https://relationallife.com/ for specialized relationship support.\n\n"
-                        "Tone:\n"
-                        "- Compassionate, calm, respectful\n"
-                        "- Never judgmental, dismissive, or alarmist unless safety is involved"
-                    ),
-                },
-                {"role": "user", "content": user_message},
-            ],
+        _ensure_agent()
+
+        from agents.financial_agent import chat
+
+        response = chat(
+            message=request.message,
+            user_id=request.user_id or "default_user",
+            thread_id=request.thread_id,
         )
-        return {"reply": response.choices[0].message.content}
-    except HTTPException:
-        raise
+        return {"reply": response}
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error calling OpenAI API: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Agent error: {str(e)}")

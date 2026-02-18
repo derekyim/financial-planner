@@ -1,0 +1,110 @@
+.root {
+  display: flex;
+  min-height: 100vh;
+}
+
+.appBar {
+  background-color: var(--BACKGROUND-DEFAULT) !important;
+  border-bottom: 1px solid var(--BORDER-COLOR);
+  color: var(--TEXT-PRIMARY) !important;
+  z-index: 1300 !important;
+}
+
+.menuButton {
+  margin-right: 16px !important;
+  color: var(--TEXT-SECONDARY) !important;
+}
+
+@media (min-width: 900px) {
+  .menuButton {
+    display: none !important;
+  }
+}
+
+.appTitle {
+  font-weight: 500 !important;
+  color: var(--TEXT-PRIMARY) !important;
+}
+
+.drawerContainer {
+  flex-shrink: 0;
+}
+
+.drawerInner {
+  overflow-y: auto;
+  height: 100%;
+  background-color: var(--BACKGROUND-PAPER);
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  min-height: 64px;
+}
+
+.drawerLogo {
+  font-size: 32px !important;
+  color: var(--GOOGLE-BLUE);
+}
+
+.drawerTitle {
+  font-weight: 600 !important;
+  color: var(--TEXT-PRIMARY) !important;
+  font-size: 1.1rem !important;
+}
+
+.navList {
+  padding-top: 8px !important;
+}
+
+.navItem {
+  padding: 8px 20px !important;
+  margin: 2px 8px !important;
+  border-radius: 8px !important;
+}
+
+.navItem:hover {
+  background-color: var(--BACKGROUND-HOVER) !important;
+}
+
+.navItemActive {
+  background-color: var(--GOOGLE-BLUE) !important;
+  color: white !important;
+}
+
+.navItemActive .navIcon,
+.navItemActive span {
+  color: white !important;
+}
+
+.navItemParentActive {
+  color: var(--GOOGLE-BLUE) !important;
+}
+
+.navIcon {
+  min-width: 40px !important;
+  color: var(--TEXT-SECONDARY);
+}
+
+.navItemNested {
+  padding: 6px 20px 6px 36px !important;
+  margin: 1px 8px !important;
+  border-radius: 8px !important;
+}
+
+.navItemNested:hover {
+  background-color: var(--BACKGROUND-HOVER) !important;
+}
+
+.navIconNested {
+  min-width: 36px !important;
+  color: var(--TEXT-SECONDARY);
+}
+
+.main {
+  flex-grow: 1;
+  min-height: 100vh;
+  background-color: var(--BACKGROUND-DEFAULT);
+}

@@ -548,7 +548,7 @@ def write_to_audit_log(
 def read_tasks() -> str:
     """Read pending tasks from the Tasks tab.
 
-    Per the model rules, when asked to "Complete the Next Drivepoint Task",
+    Per the model rules, when asked to "Complete the Next Dysprosium Task",
     read from this tab to get the task details.
 
     Returns:

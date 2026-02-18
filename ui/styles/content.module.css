@@ -1,0 +1,93 @@
+.page {
+  padding: 32px 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.pageTitle {
+  color: var(--TEXT-PRIMARY) !important;
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+}
+
+.pageSubtitle {
+  color: var(--TEXT-SECONDARY) !important;
+  margin-bottom: 32px !important;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionTitle {
+  color: var(--TEXT-PRIMARY) !important;
+  font-weight: 500 !important;
+  margin-bottom: 12px !important;
+}
+
+.card {
+  padding: 24px;
+  margin-bottom: 20px;
+  border-radius: 12px !important;
+  border: 1px solid var(--BORDER-COLOR);
+}
+
+.body {
+  color: var(--TEXT-SECONDARY) !important;
+  line-height: 1.7 !important;
+  margin-bottom: 16px !important;
+}
+
+.list {
+  padding-left: 24px;
+  margin-bottom: 16px;
+}
+
+.listItem {
+  color: var(--TEXT-SECONDARY);
+  line-height: 1.8;
+  margin-bottom: 4px;
+}
+
+.chip {
+  margin: 4px !important;
+}
+
+.table {
+  margin-bottom: 24px;
+}
+
+.tableHeadCell {
+  font-weight: 600 !important;
+  color: var(--TEXT-PRIMARY) !important;
+  background-color: var(--BACKGROUND-PAPER) !important;
+}
+
+.tableCell {
+  color: var(--TEXT-SECONDARY) !important;
+}
+
+.infoBox {
+  padding: 16px 20px;
+  border-left: 4px solid var(--GOOGLE-BLUE);
+  background-color: var(--BACKGROUND-PAPER);
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 20px;
+}
+
+.diagramContainer {
+  padding: 24px;
+  margin-bottom: 24px;
+  border-radius: 12px !important;
+  border: 1px solid var(--BORDER-COLOR);
+  overflow-x: auto;
+}
+
+.linkList {
+  list-style: none;
+  padding: 0;
+}
+
+.linkItem {
+  padding: 8px 0;
+}
