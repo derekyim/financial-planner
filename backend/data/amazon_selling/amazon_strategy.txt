@@ -1,0 +1,53 @@
+# Amazon Selling Strategy Guide
+Source: Best practices compilation
+Category: amazon_selling
+
+---
+
+## Getting Started on Amazon
+
+### Account Types
+- **Individual**: For sellers with fewer than 40 items/month. $0.99 per item sold.
+- **Professional**: For serious sellers. $39.99/month flat fee, access to advanced tools.
+
+### Fulfillment Options
+
+**FBA (Fulfillment by Amazon)**:
+- Amazon stores, packs, and ships your products
+- Products eligible for Prime shipping
+- Higher fees but less operational burden
+- Best for: products with good margins, high volume items
+
+**FBM (Fulfillment by Merchant)**:
+- You handle storage and shipping
+- Lower fees, more control
+- Best for: large/heavy items, low volume, custom products
+
+### Listing Optimization
+
+**Title**: Include main keywords, brand, key features. Max 200 characters.
+
+**Bullet Points**: Highlight 5 key benefits and features. Use keywords naturally.
+
+**Images**: 
+- Main image on white background
+- Lifestyle images showing product in use
+- Infographics highlighting features
+- Minimum 1000x1000 pixels for zoom
+
+**Backend Keywords**: Use all 250 bytes for search terms not in visible listing.
+
+### Amazon PPC Strategy
+
+**Sponsored Products**: Target specific keywords or ASINs. Start with automatic campaigns to discover keywords.
+
+**ACoS (Advertising Cost of Sales)**: Ad spend divided by attributed sales. Target 15-30% depending on margins.
+
+**TACOS (Total ACoS)**: Ad spend divided by total sales. Shows true advertising efficiency.
+
+### Pricing Strategy
+
+- Use repricing tools for competitive markets
+- Consider MAP (Minimum Advertised Price) policies
+- Factor in all fees: referral (8-15%), FBA fees, storage
+- Maintain at least 30% profit margin after all costs

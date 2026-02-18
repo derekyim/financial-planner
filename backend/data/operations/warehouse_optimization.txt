@@ -1,0 +1,59 @@
+# Warehouse and Fulfillment Optimization
+Source: Best practices compilation
+Category: operations
+
+---
+
+## Reducing Warehouse Costs
+
+### Inventory Management
+
+**Demand Forecasting**:
+- Analyze historical sales data
+- Account for seasonality
+- Factor in marketing calendar
+- Use 80/20 rule: focus on top SKUs
+
+**Safety Stock Formula**:
+Safety Stock = (Max Daily Sales × Max Lead Time) - (Avg Daily Sales × Avg Lead Time)
+
+**Inventory Turnover**:
+- Target 4-6x per year for most products
+- Slow movers (<2x): liquidate or reduce orders
+- Fast movers (>8x): may need more safety stock
+
+### Warehouse Layout
+
+**ABC Analysis**:
+- A items (top 20% by volume): prime picking locations
+- B items (next 30%): secondary locations
+- C items (bottom 50%): back of warehouse
+
+**Pick Path Optimization**:
+- Zone picking for large warehouses
+- Batch picking for similar orders
+- Wave picking during peak times
+
+### Labor Efficiency
+
+- Cross-train staff for flexibility
+- Use pick-to-light or voice picking
+- Implement quality checkpoints
+- Track picks per hour metrics
+
+## Reducing Shipping Costs
+
+### Carrier Negotiation
+- Get quotes from multiple carriers
+- Negotiate based on volume commitments
+- Consider regional carriers for specific zones
+
+### Packaging Optimization
+- Right-size boxes to reduce DIM weight
+- Use poly mailers when possible
+- Negotiate custom box sizes with suppliers
+
+### Zone Optimization
+- Distribute inventory to multiple locations
+- Use zone-skipping for high-volume zones
+- Consider 3PL partners in key regions

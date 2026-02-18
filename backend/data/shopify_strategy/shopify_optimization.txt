@@ -1,0 +1,58 @@
+# Shopify Store Optimization Guide
+Source: Best practices compilation
+Category: shopify_strategy
+
+---
+
+## Store Setup Best Practices
+
+### Theme Selection
+- Choose mobile-first themes (70%+ of traffic is mobile)
+- Prioritize page speed over flashy features
+- Use themes with built-in SEO features
+
+### Conversion Optimization
+
+**Homepage**:
+- Clear value proposition above the fold
+- Featured products or collections
+- Social proof (reviews, press mentions)
+- Trust badges and guarantees
+
+**Product Pages**:
+- High-quality images with zoom
+- Detailed descriptions with benefits focus
+- Size guides and specifications
+- Customer reviews and ratings
+- Clear add-to-cart button
+- Cross-sell and upsell widgets
+
+**Checkout**:
+- Enable Shop Pay for faster checkout
+- Offer multiple payment options
+- Display security badges
+- Show shipping costs early
+- Enable guest checkout
+
+### Apps and Integrations
+
+**Essential Apps**:
+- Email marketing (Klaviyo, Omnisend)
+- Reviews (Judge.me, Loox)
+- SMS marketing (Postscript, Attentive)
+- Subscriptions (Recharge, Bold)
+- Analytics (Triple Whale, Lifetimely)
+
+### Marketing Channels
+
+**Email Marketing**:
+- Welcome series (3-5 emails)
+- Abandoned cart recovery
+- Post-purchase follow-up
+- Win-back campaigns
+
+**Retention Strategies**:
+- Loyalty programs
+- Subscription options
+- VIP customer tiers
+- Referral programs

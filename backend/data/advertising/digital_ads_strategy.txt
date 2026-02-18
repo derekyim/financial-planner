@@ -1,0 +1,58 @@
+# Digital Advertising Strategy
+Source: Best practices compilation
+Category: advertising
+
+---
+
+## Meta (Facebook/Instagram) Ads
+
+### Campaign Structure
+
+**Top of Funnel (Prospecting)**:
+- Broad audiences or lookalikes
+- Video content performs best
+- Focus on awareness and engagement
+- Budget: 60-70% of ad spend
+
+**Middle of Funnel (Consideration)**:
+- Retarget website visitors
+- Engaged social followers
+- Email subscribers
+- Budget: 20-30% of ad spend
+
+**Bottom of Funnel (Conversion)**:
+- Cart abandoners
+- Product page viewers
+- High-intent audiences
+- Budget: 10-20% of ad spend
+
+### Key Metrics
+- **ROAS (Return on Ad Spend)**: Revenue / Ad Spend. Target 3x+ for profitability
+- **CPM (Cost per 1000 impressions)**: Monitor for audience saturation
+- **CTR (Click-through rate)**: Benchmark 1-2% for ecommerce
+- **CPA (Cost per acquisition)**: Should be well below customer LTV
+
+## Google Ads
+
+### Campaign Types
+
+**Shopping Campaigns**:
+- Product listing ads in search results
+- Requires Google Merchant Center
+- Use Performance Max for AI optimization
+
+**Search Campaigns**:
+- Text ads for branded and non-branded keywords
+- Use negative keywords to reduce waste
+- Implement RLSA for remarketing
+
+**Display/YouTube**:
+- Awareness and remarketing
+- Lower intent but broader reach
+- Use for brand building
+
+### Optimization Tips
+- Segment campaigns by product category
+- Use bid adjustments for devices and locations
+- Test ad copy continuously
+- Monitor search terms report weekly

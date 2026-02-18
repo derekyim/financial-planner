@@ -3,10 +3,10 @@ uv.lock
 ui/node_modules/
 ui/.next/
 
-
-api/.env
-
-api/__pycache__/*
+# Backend secrets
+backend/.env
+backend/credentials.json
+backend/.venv/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -137,8 +137,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-api/.env
-api/.env.local
+backend/api/.env
+backend/api/.env.local
 ui/.env.local
 ui/.env
 

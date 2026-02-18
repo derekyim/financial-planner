@@ -1,0 +1,92 @@
+[
+  {
+    "question": "What is EBITDA and why is it important?",
+    "reference": "EBITDA stands for Earnings Before Interest, Taxes, Depreciation, and Amortization. It's a measure of operating performance that shows profitability before accounting for financial decisions and tax effects.",
+    "topics": [
+      "finance",
+      "metrics",
+      "profitability"
+    ]
+  },
+  {
+    "question": "How is Customer Acquisition Cost (CAC) calculated?",
+    "reference": "Customer Acquisition Cost (CAC) is the total cost of acquiring a new customer, including marketing and sales expenses, divided by the number of new customers acquired.",
+    "topics": [
+      "finance",
+      "marketing",
+      "metrics"
+    ]
+  },
+  {
+    "question": "What is the difference between Gross Profit and Net Income?",
+    "reference": "Gross Profit is revenue minus cost of goods sold, while Net Income is the bottom line profit after all expenses, interest, and taxes are deducted.",
+    "topics": [
+      "finance",
+      "profitability",
+      "accounting"
+    ]
+  },
+  {
+    "question": "What are the key elements of Amazon listing optimization?",
+    "reference": "Key elements include optimized title with keywords, compelling bullet points, high-quality images, backend keywords, and competitive pricing.",
+    "topics": [
+      "amazon",
+      "ecommerce",
+      "optimization"
+    ]
+  },
+  {
+    "question": "What is the difference between FBA and FBM on Amazon?",
+    "reference": "FBA (Fulfillment by Amazon) means Amazon stores and ships your products, while FBM (Fulfillment by Merchant) means you handle storage and shipping yourself.",
+    "topics": [
+      "amazon",
+      "fulfillment",
+      "logistics"
+    ]
+  },
+  {
+    "question": "What is a good ROAS target for Meta advertising?",
+    "reference": "A good ROAS (Return on Ad Spend) target is typically 3x or higher for profitability, meaning $3 in revenue for every $1 spent on ads.",
+    "topics": [
+      "advertising",
+      "meta",
+      "metrics"
+    ]
+  },
+  {
+    "question": "How should I structure my Meta ads funnel?",
+    "reference": "Structure with Top of Funnel (60-70% budget) for prospecting, Middle of Funnel (20-30%) for retargeting engaged users, and Bottom of Funnel (10-20%) for conversion.",
+    "topics": [
+      "advertising",
+      "meta",
+      "strategy"
+    ]
+  },
+  {
+    "question": "How can I reduce warehouse costs?",
+    "reference": "Reduce warehouse costs through demand forecasting, ABC inventory analysis for layout optimization, batch picking, and negotiating with carriers for better shipping rates.",
+    "topics": [
+      "operations",
+      "warehouse",
+      "cost optimization"
+    ]
+  },
+  {
+    "question": "What is the formula for safety stock?",
+    "reference": "Safety Stock = (Max Daily Sales \u00d7 Max Lead Time) - (Average Daily Sales \u00d7 Average Lead Time).",
+    "topics": [
+      "operations",
+      "inventory",
+      "logistics"
+    ]
+  },
+  {
+    "question": "What are essential Shopify apps for ecommerce?",
+    "reference": "Essential apps include email marketing (Klaviyo), reviews (Judge.me), SMS marketing (Postscript), subscriptions (Recharge), and analytics (Triple Whale).",
+    "topics": [
+      "shopify",
+      "ecommerce",
+      "tools"
+    ]
+  }
+]

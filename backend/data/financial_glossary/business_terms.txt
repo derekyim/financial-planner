@@ -1,0 +1,57 @@
+# Business Financial Terms Glossary
+Source: Curated from industry standards
+Category: financial_glossary
+
+---
+
+## Revenue and Sales Terms
+
+**Gross Sales**: The total amount of sales before any deductions (returns, discounts, allowances).
+
+**Net Revenue**: Gross sales minus returns, discounts, and allowances. This is the actual revenue recognized.
+
+**Average Order Value (AOV)**: Total revenue divided by number of orders. A key metric for ecommerce.
+
+**Customer Acquisition Cost (CAC)**: Total cost of acquiring a new customer, including marketing and sales expenses.
+
+**Lifetime Value (LTV)**: The predicted total revenue a customer will generate over their relationship with the business.
+
+**LTV:CAC Ratio**: The ratio of customer lifetime value to acquisition cost. A healthy ratio is typically 3:1 or higher.
+
+## Profitability Terms
+
+**Gross Profit**: Revenue minus Cost of Goods Sold (COGS). Shows profitability before operating expenses.
+
+**Gross Margin**: Gross Profit divided by Revenue, expressed as a percentage.
+
+**Contribution Margin**: Revenue minus variable costs. Shows how much each sale contributes to fixed costs and profit.
+
+**EBITDA**: Earnings Before Interest, Taxes, Depreciation, and Amortization. A measure of operating performance.
+
+**EBIT (Operating Income)**: Earnings Before Interest and Taxes. Shows profitability from core operations.
+
+**Net Income**: The bottom line profit after all expenses, interest, and taxes.
+
+## Cash Flow Terms
+
+**Operating Cash Flow**: Cash generated from normal business operations.
+
+**Free Cash Flow**: Operating cash flow minus capital expenditures. Cash available for dividends, debt repayment, or reinvestment.
+
+**Working Capital**: Current assets minus current liabilities. Measures short-term liquidity.
+
+**Burn Rate**: The rate at which a company spends its cash reserves, typically monthly.
+
+**Runway**: How long a company can operate before running out of cash, based on current burn rate.
+
+## Ecommerce Metrics
+
+**Conversion Rate**: Percentage of visitors who make a purchase.
+
+**Cart Abandonment Rate**: Percentage of shoppers who add items to cart but don't complete purchase.
+
+**Return Rate**: Percentage of products returned by customers.
+
+**Repeat Purchase Rate**: Percentage of customers who make more than one purchase.
+
+**Churn Rate**: Percentage of customers who stop buying over a given period.
