@@ -1,0 +1,58 @@
+/**
+ * InfoModal Component Styles
+ */
+
+.info-modal-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--BORDER-COLOR);
+  padding: 16px 24px;
+}
+
+.info-modal-close-button {
+  color: var(--TEXT-SECONDARY);
+}
+
+.info-modal-close-button:hover {
+  color: var(--TEXT-PRIMARY);
+  background-color: var(--BACKGROUND-HOVER);
+}
+
+.info-modal-content {
+  padding: 24px;
+  background-color: var(--BACKGROUND-PAPER);
+}
+
+.info-modal-accordion {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  box-shadow: var(--SHADOW-SM);
+}
+
+.info-modal-accordion::before {
+  display: none;
+}
+
+.info-modal-accordion-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.info-modal-accordion-icon {
+  color: var(--GOOGLE-BLUE);
+  margin-right: 8px;
+}
+
+.info-modal-accordion-details {
+  padding: 16px 24px;
+  background-color: var(--BACKGROUND-DEFAULT);
+  border-top: 1px solid var(--DIVIDER-COLOR);
+}
+
+.info-modal-accordion-details p {
+  color: var(--TEXT-SECONDARY);
+  line-height: 1.6;
+}
+

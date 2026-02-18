@@ -1,0 +1,41 @@
+/**
+ * Official Google Color Palette
+ * Use these CSS variables throughout the application
+ */
+
+:root {
+  /* Google Brand Colors */
+  --GOOGLE-BLUE: #4285F4;
+  --GOOGLE-BLUE-LIGHT: #669DF6;
+  --GOOGLE-BLUE-DARK: #1967D2;
+  
+  --GOOGLE-RED: #EA4335;
+  --GOOGLE-RED-LIGHT: #F28B82;
+  --GOOGLE-RED-DARK: #C5221F;
+  
+  --GOOGLE-YELLOW: #FBBC05;
+  --GOOGLE-YELLOW-LIGHT: #FDD663;
+  --GOOGLE-YELLOW-DARK: #F29900;
+  
+  --GOOGLE-GREEN: #34A853;
+  --GOOGLE-GREEN-LIGHT: #81C995;
+  --GOOGLE-GREEN-DARK: #188038;
+  
+  /* Neutral Colors */
+  --TEXT-PRIMARY: #202124;
+  --TEXT-SECONDARY: #5F6368;
+  --TEXT-DISABLED: #80868B;
+  
+  --BACKGROUND-DEFAULT: #FFFFFF;
+  --BACKGROUND-PAPER: #F8F9FA;
+  --BACKGROUND-HOVER: #F1F3F4;
+  
+  --BORDER-COLOR: #DADCE0;
+  --DIVIDER-COLOR: #E8EAED;
+  
+  /* Shadows */
+  --SHADOW-SM: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  --SHADOW-MD: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --SHADOW-LG: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+

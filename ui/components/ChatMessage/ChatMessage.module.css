@@ -1,0 +1,88 @@
+/**
+ * ChatMessage Component Styles
+ * Uses Google color palette
+ */
+
+.chatMessage {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  max-width: 85%;
+}
+
+.chatMessageUser {
+  background-color: var(--GOOGLE-BLUE);
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.chatMessageAi {
+  background-color: var(--BACKGROUND-PAPER);
+  border: 1px solid var(--BORDER-COLOR);
+  margin-right: auto;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.avatarUser {
+  background-color: var(--GOOGLE-BLUE-DARK);
+}
+
+.avatarAi {
+  background-color: var(--GOOGLE-GREEN);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sender {
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.senderUser {
+  color: rgba(255, 255, 255, 0.9);
+  text-align: right;
+}
+
+.senderAi {
+  color: var(--TEXT-SECONDARY);
+}
+
+.text {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.textUser {
+  color: var(--BACKGROUND-DEFAULT);
+}
+
+.textAi {
+  color: var(--TEXT-PRIMARY);
+}
+
+.timestamp {
+  font-size: 0.7rem;
+}
+
+.timestampUser {
+  color: rgba(255, 255, 255, 0.7);
+  text-align: right;
+}
+
+.timestampAi {
+  color: var(--TEXT-DISABLED);
+}
+

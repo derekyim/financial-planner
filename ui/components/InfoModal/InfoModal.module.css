@@ -1,0 +1,61 @@
+/**
+ * InfoModal Component Styles
+ */
+
+.infoModalDialog {
+  /* Dialog container styles */
+}
+
+.infoModalTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--BORDER-COLOR);
+  padding: 16px 24px;
+}
+
+.infoModalCloseButton {
+  color: var(--TEXT-SECONDARY);
+}
+
+.infoModalCloseButton:hover {
+  color: var(--TEXT-PRIMARY);
+  background-color: var(--BACKGROUND-HOVER);
+}
+
+.infoModalContent {
+  padding: 24px;
+  background-color: var(--BACKGROUND-PAPER);
+}
+
+.infoModalAccordion {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  box-shadow: var(--SHADOW-SM);
+}
+
+.infoModalAccordion::before {
+  display: none;
+}
+
+.infoModalAccordionSummary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.infoModalAccordionIcon {
+  color: var(--GOOGLE-BLUE);
+  margin-right: 8px;
+}
+
+.infoModalAccordionDetails {
+  padding: 16px 24px;
+  background-color: var(--BACKGROUND-DEFAULT);
+  border-top: 1px solid var(--DIVIDER-COLOR);
+}
+
+.infoModalAccordionDetails p {
+  color: var(--TEXT-SECONDARY);
+  line-height: 1.6;
+}
