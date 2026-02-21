@@ -198,7 +198,7 @@ If you complete a "Task" then mark the 'Status' column on the Tasks tab as 'succ
 ==== EBITDA ====
 
 
-Location: 'operations'!Row 194  |  Formula: =Row191 + Row192 + Row193
+Location: 'operations'!Row 195  |  Formula: =Row192 + Row193 + Row194
 EBITDA = EBIT + Depreciation + Amortization
 
 

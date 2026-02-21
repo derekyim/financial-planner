@@ -333,10 +333,11 @@ def read_cell_formula(sheet_name: str, cell_notation: str) -> str:
 
     try:
         formula = sheets.read_cell_formula(url, resolved_name, cell_notation)
-        if formula and formula.startswith("="):
-            return f"Formula at {resolved_name}!{cell_notation}: {formula}"
+        formula_str = str(formula) if formula is not None else None
+        if formula_str and formula_str.startswith("="):
+            return f"Formula at {resolved_name}!{cell_notation}: {formula_str}"
         else:
-            return f"Cell {resolved_name}!{cell_notation} contains a static value: {formula}"
+            return f"Cell {resolved_name}!{cell_notation} contains a static value: {formula_str}"
     except Exception as e:
         extra = f" (resolved from '{sheet_name}')" if resolved_name != sheet_name else ""
         return _format_sheets_error(e, f"reading formula at {resolved_name}!{cell_notation}{extra}")
@@ -370,6 +371,57 @@ def read_range(sheet_name: str, range_notation: str) -> str:
 
 
 @tool
+def sum_range(sheet_name: str, range_notation: str) -> str:
+    """Read a range of cells and compute sum, average, min, max, and count.
+
+    Use this whenever you need to total values across months, quarters, or years
+    instead of doing mental math on individual cell values.
+
+    Args:
+        sheet_name: Name of the tab (e.g., "operations").
+        range_notation: A1 notation for the range (e.g., "BS29:CD29").
+
+    Returns:
+        Aggregation results with exact values.
+    """
+    sheets = get_sheets_client()
+    url = get_spreadsheet_url()
+    resolved_name = _resolve_sheet_name(sheet_name)
+
+    try:
+        data = sheets.read_range(url, resolved_name, range_notation)
+        numbers = []
+        for row in data:
+            for cell in row:
+                if cell is None:
+                    continue
+                try:
+                    numbers.append(float(cell))
+                except (ValueError, TypeError):
+                    continue
+
+        if not numbers:
+            return f"No numeric values found in {resolved_name}!{range_notation}."
+
+        total = sum(numbers)
+        avg = total / len(numbers)
+        lo = min(numbers)
+        hi = max(numbers)
+
+        return (
+            f"Aggregation of {resolved_name}!{range_notation} ({len(numbers)} numeric values):\n"
+            f"  Sum:     ${total:,.2f}\n"
+            f"  Average: ${avg:,.2f}\n"
+            f"  Min:     ${lo:,.2f}\n"
+            f"  Max:     ${hi:,.2f}\n"
+            f"  Count:   {len(numbers)}"
+        )
+    except Exception as e:
+        extra = f" (resolved from '{sheet_name}')" if resolved_name != sheet_name else ""
+        return _format_sheets_error(e, f"summing range {resolved_name}!{range_notation}{extra}")
+
+
+@tool
 def trace_formula_chain(sheet_name: str, cell_notation: str, max_depth: int = 5) -> str:
     """Trace the formula dependencies for a cell to understand its calculation chain.
 
@@ -377,7 +429,7 @@ def trace_formula_chain(sheet_name: str, cell_notation: str, max_depth: int = 5)
 
     Args:
         sheet_name: Name of the tab containing the cell (e.g., "operations").
-        cell_notation: A1 notation for the cell to trace (e.g., "K194").
+        cell_notation: A1 notation for the cell to trace (e.g., "K195").
         max_depth: Maximum recursion depth (default 5).
 
     Returns:
@@ -421,7 +473,8 @@ def trace_formula_chain(sheet_name: str, cell_notation: str, max_depth: int = 5)
         visited.add(key)
 
         try:
-            formula = sheets.read_cell_formula(url, resolved_current, cell_ref)
+            raw_formula = sheets.read_cell_formula(url, resolved_current, cell_ref)
+            formula = str(raw_formula) if raw_formula is not None else None
             value = sheets.read_cell(url, resolved_current, cell_ref)
         except Exception as e:
             return [f"  {'  ' * depth}{key}: Error - {str(e)}"]
@@ -431,7 +484,6 @@ def trace_formula_chain(sheet_name: str, cell_notation: str, max_depth: int = 5)
 
         if formula and formula.startswith("="):
             lines.append(f"{indent}{key} = {formula} (value: {value})")
-            # Extract and trace dependencies
             refs = extract_cell_references(formula)
             for ref_sheet, ref_cell in refs:
                 lines.extend(trace_recursive(ref_sheet, ref_cell, depth + 1, visited))
@@ -527,21 +579,22 @@ def write_to_audit_log(
     sheets = get_sheets_client()
     url = get_spreadsheet_url()
 
+    audit_tab = get_tab_name("audit_log")
     try:
-        # Read existing audit log to find next row
-        existing_data = sheets.read_sheet(url, "AuditLog")
+        existing_data = sheets.read_sheet(url, audit_tab)
         next_row = len(existing_data) + 1
 
-        # Format timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Write the new row
         new_row = [[timestamp, requested_by, status, action_description, data]]
-        sheets.write_range(url, "AuditLog", f"A{next_row}", new_row)
+        sheets.write_range(url, audit_tab, f"A{next_row}", new_row)
 
-        return f"Successfully logged action to AuditLog row {next_row}"
+        return f"Successfully logged action to {audit_tab} row {next_row}"
     except Exception as e:
-        return _format_sheets_error(e, "writing to AuditLog")
+        err_msg = str(e)
+        if "WorksheetNotFound" in err_msg or "not found" in err_msg.lower():
+            return f"AuditLog tab '{audit_tab}' not found in spreadsheet; skipping audit entry."
+        return _format_sheets_error(e, f"writing to {audit_tab}")
 
 
 @tool
@@ -631,6 +684,268 @@ def find_forecast_columns() -> str:
         return _format_sheets_error(e, f"finding forecast columns in '{main_tab}'")
 
 
+def _get_month_map():
+    import calendar
+    m = {name.lower(): num for num, name in enumerate(calendar.month_abbr) if num}
+    m.update({name.lower(): num for num, name in enumerate(calendar.month_name) if num})
+    return m
+
+
+def _parse_mon_yy(text: str, month_map: dict) -> tuple:
+    """Parse 'Mon-YY', 'Mon-YYYY', 'Month YYYY' into (month, year) or (None, None)."""
+    match = re.match(r"^([A-Za-z]+)[- /](\d{2,4})$", text.strip())
+    if match:
+        m = month_map.get(match.group(1).lower())
+        y = int(match.group(2))
+        if y < 100:
+            y += 2000
+        return (m, y) if m else (None, None)
+    return (None, None)
+
+
+def _parse_cell_date(val_str: str, month_map: dict) -> tuple:
+    """Parse a cell value into (month, year), trying Mon-YY first then dateutil."""
+    from dateutil import parser as dateparser
+    m, y = _parse_mon_yy(val_str, month_map)
+    if m is not None:
+        return (m, y)
+    try:
+        parsed = dateparser.parse(val_str)
+        if parsed:
+            return (parsed.month, parsed.year)
+    except (ValueError, TypeError):
+        pass
+    return (None, None)
+
+
+def _load_date_spine() -> tuple:
+    """Load the date spine from row 2 and return (main_tab, row_data) or raise."""
+    sheets = get_sheets_client()
+    url = get_spreadsheet_url()
+    main_tab = get_tab_name("main_monthly")
+    data = sheets.read_range(url, main_tab, "K2:EZ2")
+    if not data or not data[0]:
+        return (main_tab, [])
+    return (main_tab, data[0])
+
+
+@tool
+def find_date_column(date_query: str) -> str:
+    """Find which column corresponds to a given date or month.
+
+    The date spine is in row 2 of the operations tab, starting at column K.
+    Use this BEFORE reading a metric value for a specific month.
+
+    Args:
+        date_query: A date reference like "Apr-25", "April 2025", "Apr 2025",
+                    "Q2 2025", "2025-04-30", etc.
+
+    Returns:
+        The column letter and cell value, e.g., "Column BX (operations!BX2 = Apr-25)"
+    """
+    from dateutil import parser as dateparser
+
+    month_map = _get_month_map()
+
+    try:
+        main_tab, row = _load_date_spine()
+        if not row:
+            return "No date spine found in row 2."
+
+        target_month, target_year = _parse_mon_yy(date_query, month_map)
+
+        if target_month is None:
+            try:
+                parsed = dateparser.parse(date_query, dayfirst=False)
+                if parsed:
+                    target_month = parsed.month
+                    target_year = parsed.year
+            except (ValueError, TypeError):
+                pass
+
+        if target_month is None:
+            return f"Could not parse '{date_query}' as a date. Try formats like 'Apr-25', 'April 2025', '2025-04-30'."
+
+        for i, cell_val in enumerate(row):
+            if cell_val is None or str(cell_val).strip() == "":
+                continue
+            cell_month, cell_year = _parse_cell_date(str(cell_val), month_map)
+            if cell_month == target_month and cell_year == target_year:
+                col_letter = _index_to_column(i + 10)
+                return f"Column {col_letter} (cell {main_tab}!{col_letter}2 = {cell_val})"
+
+        return f"No column found matching '{date_query}' in the date spine (row 2). Available dates start at {row[0]} and end at {row[-1] if row else 'unknown'}."
+    except Exception as e:
+        return _format_sheets_error(e, f"finding date column for '{date_query}'")
+
+
+@tool
+def find_date_range(period: str) -> str:
+    """Find the start and end columns for a date range (year, quarter, or custom).
+
+    Use this when the user asks about a full year, quarter, or multi-month span.
+    Returns start/end column letters so you can build a range like "BS29:CD29"
+    for use with read_range, then sum the values.
+
+    Args:
+        period: A period like "2025", "Q2 2025", "Q1 2024", "H1 2025",
+                "Jan-25 to Jun-25", "2024", etc.
+
+    Returns:
+        Start and end columns with instructions, e.g.,
+        "Range: BS to CD (Jan-25 through Dec-25, 12 months).
+         To read a metric across this range, use read_range with e.g. 'BS29:CD29'
+         then sum the numeric values."
+    """
+    month_map = _get_month_map()
+
+    try:
+        main_tab, row = _load_date_spine()
+        if not row:
+            return "No date spine found in row 2."
+
+        parsed_spine = []
+        for i, cell_val in enumerate(row):
+            if cell_val is None or str(cell_val).strip() == "":
+                parsed_spine.append((i, None, None, str(cell_val) if cell_val else ""))
+                continue
+            m, y = _parse_cell_date(str(cell_val), month_map)
+            parsed_spine.append((i, m, y, str(cell_val)))
+
+        period_stripped = period.strip()
+
+        start_month, start_year, end_month, end_year = None, None, None, None
+
+        # "2025" — full year
+        year_match = re.match(r"^(\d{4})$", period_stripped)
+        if year_match:
+            yr = int(year_match.group(1))
+            start_month, start_year = 1, yr
+            end_month, end_year = 12, yr
+
+        # "Q1 2025", "Q2 2024", etc.
+        if start_month is None:
+            q_match = re.match(r"^[Qq]([1-4])\s*(\d{4})$", period_stripped)
+            if q_match:
+                q = int(q_match.group(1))
+                yr = int(q_match.group(2))
+                start_month = (q - 1) * 3 + 1
+                end_month = q * 3
+                start_year = end_year = yr
+
+        # "H1 2025", "H2 2025"
+        if start_month is None:
+            h_match = re.match(r"^[Hh]([12])\s*(\d{4})$", period_stripped)
+            if h_match:
+                h = int(h_match.group(1))
+                yr = int(h_match.group(2))
+                start_month = 1 if h == 1 else 7
+                end_month = 6 if h == 1 else 12
+                start_year = end_year = yr
+
+        # "Jan-25 to Jun-25", "Apr 2024 to Sep 2024"
+        if start_month is None:
+            range_match = re.match(
+                r"^([A-Za-z0-9 -]+?)\s+to\s+([A-Za-z0-9 -]+)$",
+                period_stripped, re.IGNORECASE,
+            )
+            if range_match:
+                sm, sy = _parse_mon_yy(range_match.group(1), month_map)
+                em, ey = _parse_mon_yy(range_match.group(2), month_map)
+                if sm and em:
+                    start_month, start_year = sm, sy
+                    end_month, end_year = em, ey
+
+        if start_month is None:
+            return (
+                f"Could not parse '{period}' as a date range. "
+                "Try formats like '2025', 'Q2 2025', 'H1 2025', or 'Jan-25 to Jun-25'."
+            )
+
+        first_col = None
+        last_col = None
+        first_label = ""
+        last_label = ""
+        count = 0
+
+        for idx, m, y, label in parsed_spine:
+            if m is None or y is None:
+                continue
+            in_range = (
+                (y > start_year or (y == start_year and m >= start_month))
+                and (y < end_year or (y == end_year and m <= end_month))
+            )
+            if in_range:
+                col = _index_to_column(idx + 10)
+                if first_col is None:
+                    first_col = col
+                    first_label = label
+                last_col = col
+                last_label = label
+                count += 1
+
+        if first_col is None:
+            return f"No columns found in the date spine matching '{period}'."
+
+        return (
+            f"Range: {first_col} to {last_col} ({first_label} through {last_label}, {count} months).\n"
+            f"To read a metric across this range, use read_range with e.g. '{first_col}<ROW>:{last_col}<ROW>' "
+            f"(replace <ROW> with the metric's row number), then sum the numeric values."
+        )
+    except Exception as e:
+        return _format_sheets_error(e, f"finding date range for '{period}'")
+
+
+@tool
+def find_metric_row(metric_name: str, sheet_name: str = "operations") -> str:
+    """Find which row contains a given metric by searching column C.
+
+    Use this to dynamically locate metrics instead of relying on hardcoded row numbers.
+
+    Args:
+        metric_name: The metric to find (e.g., "Orders", "EBITDA", "Gross Sales").
+        sheet_name: Tab to search in (default: "operations").
+
+    Returns:
+        Row number and cell reference, e.g., "Row 15 (operations!C15 = Orders)"
+    """
+    sheets = get_sheets_client()
+    url = get_spreadsheet_url()
+    resolved_name = _resolve_sheet_name(sheet_name)
+
+    try:
+        data = sheets.read_range(url, resolved_name, "C1:C300")
+        if not data:
+            return f"No data found in column C of '{resolved_name}'."
+
+        query_lower = metric_name.strip().lower()
+        exact_match = None
+        partial_matches = []
+
+        for i, row_data in enumerate(data):
+            cell_val = row_data[0] if row_data else None
+            if cell_val is None:
+                continue
+            cell_str = str(cell_val).strip()
+            if cell_str.lower() == query_lower:
+                exact_match = (i + 1, cell_str)
+                break
+            if query_lower in cell_str.lower():
+                partial_matches.append((i + 1, cell_str))
+
+        if exact_match:
+            row_num, label = exact_match
+            return f"Row {row_num} ({resolved_name}!C{row_num} = {label})"
+
+        if partial_matches:
+            results = [f"  Row {r}: {label}" for r, label in partial_matches[:5]]
+            return f"No exact match for '{metric_name}'. Partial matches in '{resolved_name}':\n" + "\n".join(results)
+
+        return f"Metric '{metric_name}' not found in column C of '{resolved_name}'."
+    except Exception as e:
+        return _format_sheets_error(e, f"finding metric row for '{metric_name}' in '{resolved_name}'")
+
+
 def _index_to_column(index: int) -> str:
     """Convert 0-based index to Excel column letter."""
     result = ""
@@ -649,6 +964,7 @@ ALL_TOOLS = [
     read_cell_value,
     read_cell_formula,
     read_range,
+    sum_range,
     trace_formula_chain,
     write_cell_value,
     write_range_values,
@@ -656,9 +972,11 @@ ALL_TOOLS = [
     read_tasks,
     mark_task_complete,
     find_forecast_columns,
+    find_date_column,
+    find_date_range,
+    find_metric_row,
 ]
 
-# Tools for read-only operations (safer for recall agent)
 READ_ONLY_TOOLS = [
     read_model_documentation,
     read_key_drivers_and_results,
@@ -666,11 +984,14 @@ READ_ONLY_TOOLS = [
     read_cell_value,
     read_cell_formula,
     read_range,
+    sum_range,
     trace_formula_chain,
     find_forecast_columns,
+    find_date_column,
+    find_date_range,
+    find_metric_row,
 ]
 
-# Tools for goal seek agent (needs write access)
 GOAL_SEEK_TOOLS = [
     read_model_documentation,
     read_key_drivers_and_results,
@@ -678,9 +999,13 @@ GOAL_SEEK_TOOLS = [
     read_cell_value,
     read_cell_formula,
     read_range,
+    sum_range,
     trace_formula_chain,
     write_cell_value,
     write_range_values,
     write_to_audit_log,
     find_forecast_columns,
+    find_date_column,
+    find_date_range,
+    find_metric_row,
 ]

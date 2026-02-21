@@ -93,3 +93,9 @@
   background-color: var(--BORDER-COLOR) !important;
   color: var(--TEXT-DISABLED) !important;
 }
+
+.cancelButton {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+}

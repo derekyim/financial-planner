@@ -8,6 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import SendIcon from '@mui/icons-material/Send';
+import CancelIcon from '@mui/icons-material/Cancel';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { APP_NAME, DEFAULT_MODEL, type SavedModel } from '@/constants';
 import ChatMessage from '@/components/ChatMessage/ChatMessage';
@@ -38,13 +39,20 @@ export default function Home() {
   const [thinkingText, setThinkingText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeModel, setActiveModel] = useState<SavedModel>(DEFAULT_MODEL);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setSessions(chatSessionStore.getAll());
+    const all = chatSessionStore.getAll();
+    setSessions(all);
+    if (all.length > 0 && !activeSessionId) {
+      const latest = all[0];
+      setActiveSessionId(latest.id);
+      setMessages(latest.messages);
+    }
     const unsub = chatSessionStore.subscribe(() => setSessions(chatSessionStore.getAll()));
     return unsub;
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -104,6 +112,9 @@ export default function Home() {
 
     logStore.add('UI', `User sent: "${userMessage.text}"`);
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const reply = await chatService.sendMessageStream(
         userMessage.text,
@@ -121,6 +132,7 @@ export default function Home() {
           },
         },
         sessionId,
+        controller.signal,
       );
 
       setThinkingText(null);
@@ -139,12 +151,22 @@ export default function Home() {
       }
     } catch (err) {
       setThinkingText(null);
-      const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
-      setError(errorMessage);
-      logStore.add('UI', `Error: ${errorMessage}`);
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        logStore.add('UI', 'Request cancelled by user');
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
+        setError(errorMessage);
+        logStore.add('UI', `Error: ${errorMessage}`);
+      }
     } finally {
+      abortControllerRef.current = null;
       setIsLoading(false);
     }
+  }
+
+  function handleCancel() {
+    abortControllerRef.current?.abort();
+    logStore.add('UI', 'Cancelling request...');
   }
 
   function handleKeyPress(event: React.KeyboardEvent) {
@@ -220,6 +242,16 @@ export default function Home() {
             >
               <SendIcon />
             </IconButton>
+            {isLoading && (
+              <IconButton
+                color="error"
+                onClick={handleCancel}
+                className={styles.cancelButton}
+                title="Cancel request"
+              >
+                <CancelIcon />
+              </IconButton>
+            )}
           </Container>
         </Paper>
       </Box>

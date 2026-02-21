@@ -333,6 +333,12 @@ Additional roadmap items for Demo Day:
 | All relevant code | 0 | Public GitHub repo | -- |
 
 
-## Remaining Actions
+# Certification Challenge LOOM video
+https://www.loom.com/share/00cf750e7ea04ff296f8e76f4a6e2d8b
 
-- Record Loom video using the script outline above and paste the URL into the Loom Video section
+
+# LangSmith Experiments Screenshot
+
+![LangSmith Experiments — RAG Eval Comparison](backend/data/evals_screenshot.png)
+
+

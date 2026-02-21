@@ -10,14 +10,43 @@ export type ChatSession = {
   updatedAt: Date;
 };
 
+const STORAGE_KEY = 'fp-chat-sessions';
+
 type Listener = () => void;
 
 let _sessions: ChatSession[] = [];
 let _listeners: Listener[] = [];
 
+function hydrateFromStorage(): ChatSession[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as ChatSession[];
+    return parsed.map((s) => ({
+      ...s,
+      updatedAt: new Date(s.updatedAt),
+      messages: s.messages.map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function persistToStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(_sessions));
+  } catch {
+    /* quota exceeded — silently drop */
+  }
+}
+
 function notify() {
   _listeners.forEach((fn) => fn());
 }
+
+_sessions = hydrateFromStorage();
 
 export const chatSessionStore = {
   getAll(): ChatSession[] {
@@ -38,16 +67,19 @@ export const chatSessionStore = {
     } else {
       _sessions = [..._sessions, session];
     }
+    persistToStorage();
     notify();
   },
 
   remove(id: string) {
     _sessions = _sessions.filter((s) => s.id !== id);
+    persistToStorage();
     notify();
   },
 
   clear() {
     _sessions = [];
+    persistToStorage();
     notify();
   },
 

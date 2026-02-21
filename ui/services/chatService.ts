@@ -31,11 +31,13 @@ async function sendMessageStream(
   message: string,
   callbacks: StreamCallbacks,
   threadId?: string,
+  signal?: AbortSignal,
 ): Promise<string> {
   const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, thread_id: threadId }),
+    signal,
   });
 
   if (!response.ok) {
@@ -50,43 +52,47 @@ async function sendMessageStream(
   let buffer = '';
   let finalReply = '';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
+      buffer += decoder.decode(value, { stream: true });
 
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
 
-    let currentEvent = '';
-    for (const line of lines) {
-      if (line.startsWith('event: ')) {
-        currentEvent = line.slice(7).trim();
-      } else if (line.startsWith('data: ') && currentEvent) {
-        try {
-          const data = JSON.parse(line.slice(6));
-          switch (currentEvent) {
-            case 'thinking':
-              callbacks.onThinking?.(data.text);
-              break;
-            case 'log':
-              callbacks.onLog?.(data.text);
-              break;
-            case 'reply':
-              finalReply = data.text;
-              callbacks.onReply?.(data.text);
-              break;
-            case 'error':
-              callbacks.onError?.(data.text);
-              break;
-          }
-        } catch { /* skip malformed JSON */ }
-        currentEvent = '';
-      } else if (line === '') {
-        currentEvent = '';
+      let currentEvent = '';
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          currentEvent = line.slice(7).trim();
+        } else if (line.startsWith('data: ') && currentEvent) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            switch (currentEvent) {
+              case 'thinking':
+                callbacks.onThinking?.(data.text);
+                break;
+              case 'log':
+                callbacks.onLog?.(data.text);
+                break;
+              case 'reply':
+                finalReply = data.text;
+                callbacks.onReply?.(data.text);
+                break;
+              case 'error':
+                callbacks.onError?.(data.text);
+                break;
+            }
+          } catch { /* skip malformed JSON */ }
+          currentEvent = '';
+        } else if (line === '') {
+          currentEvent = '';
+        }
       }
     }
+  } finally {
+    reader.releaseLock();
   }
 
   return finalReply;
