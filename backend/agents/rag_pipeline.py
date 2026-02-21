@@ -5,9 +5,16 @@ using the same tech stack as the reference notebooks:
 - OpenAI text-embedding-3-small embeddings
 - Qdrant vector store (in-memory)
 - RecursiveCharacterTextSplitter for chunking
+
+Supports two retrieval modes controlled by the ADVANCED_RETRIEVAL env var:
+- Dense-only (default): Standard Qdrant cosine similarity search
+- Hybrid (advanced): BM25 sparse + dense retrieval fused via Reciprocal Rank Fusion
+  with NLTK tokenization (stop-word removal, Porter stemming, punctuation stripping),
+  BM25 score thresholding, and asymmetric RRF weighting (dense 1.5x).
 """
 
 import os
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -29,11 +36,15 @@ CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 RETRIEVAL_K = 5
 
+ADVANCED_RETRIEVAL = os.environ.get("ADVANCED_RETRIEVAL", "false").lower() == "true"
+
 
 class RAGPipeline:
     """RAG pipeline for business knowledge retrieval.
     
     Handles document loading, embedding, storage, and retrieval.
+    When advanced_retrieval is True, combines dense vector search with
+    BM25 sparse retrieval using Reciprocal Rank Fusion (RRF).
     """
     
     def __init__(
@@ -43,6 +54,7 @@ class RAGPipeline:
         embedding_model: str = EMBEDDING_MODEL,
         chunk_size: int = CHUNK_SIZE,
         chunk_overlap: int = CHUNK_OVERLAP,
+        advanced_retrieval: bool = False,
     ):
         """Initialize the RAG pipeline.
         
@@ -52,11 +64,13 @@ class RAGPipeline:
             embedding_model: OpenAI embedding model to use.
             chunk_size: Size of text chunks.
             chunk_overlap: Overlap between chunks.
+            advanced_retrieval: If True, use hybrid BM25+dense retrieval with RRF.
         """
         self.data_dir = data_dir or DATA_DIR
         self.collection_name = collection_name
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self.advanced_retrieval = advanced_retrieval
         
         # Initialize embeddings
         self.embeddings = OpenAIEmbeddings(model=embedding_model)
@@ -84,6 +98,10 @@ class RAGPipeline:
         )
         
         self._is_loaded = False
+        
+        # BM25 components (populated during ingest when advanced_retrieval=True)
+        self._bm25 = None
+        self._bm25_docs: list[Document] = []
     
     def load_documents(self) -> list[Document]:
         """Load documents from the data directory.
@@ -96,15 +114,16 @@ class RAGPipeline:
             print("Run 'python scrape_data.py' to create sample documents.")
             return []
         
-        # Load all .txt files recursively
-        loader = DirectoryLoader(
-            str(self.data_dir),
-            glob="**/*.txt",
-            loader_cls=TextLoader,
-            loader_kwargs={"encoding": "utf-8"},
-        )
+        documents = []
+        for pattern in ["**/*.txt", "**/*.md"]:
+            loader = DirectoryLoader(
+                str(self.data_dir),
+                glob=pattern,
+                loader_cls=TextLoader,
+                loader_kwargs={"encoding": "utf-8"},
+            )
+            documents.extend(loader.load())
         
-        documents = loader.load()
         print(f"Loaded {len(documents)} documents from {self.data_dir}")
         
         return documents
@@ -138,6 +157,9 @@ class RAGPipeline:
     def ingest(self) -> int:
         """Load, split, and add all documents to the vector store.
         
+        When advanced_retrieval is enabled, also builds a BM25 index
+        over the same chunks for hybrid retrieval.
+        
         Returns:
             Number of chunks ingested.
         """
@@ -149,7 +171,31 @@ class RAGPipeline:
         self.add_documents(chunks)
         self._is_loaded = True
         
+        if self.advanced_retrieval:
+            self._build_bm25_index(chunks)
+            print(f"[RAG] Advanced retrieval enabled: BM25 index built over {len(chunks)} chunks")
+        
         return len(chunks)
+    
+    @staticmethod
+    def _tokenize(text: str) -> list[str]:
+        """Tokenize text with punctuation stripping, stop-word removal, and stemming."""
+        from nltk.stem import PorterStemmer
+        from nltk.corpus import stopwords
+
+        _stemmer = PorterStemmer()
+        _stop_words = set(stopwords.words("english"))
+
+        tokens = re.findall(r"[a-zA-Z0-9]+", text.lower())
+        return [_stemmer.stem(t) for t in tokens if t not in _stop_words and len(t) > 1]
+
+    def _build_bm25_index(self, chunks: list[Document]) -> None:
+        """Build a BM25 sparse index over ingested chunks with proper NLP tokenization."""
+        from rank_bm25 import BM25Okapi
+
+        tokenized = [self._tokenize(doc.page_content) for doc in chunks]
+        self._bm25_docs = chunks
+        self._bm25 = BM25Okapi(tokenized)
     
     def get_retriever(self, k: int = RETRIEVAL_K):
         """Get a retriever for the vector store.
@@ -168,6 +214,9 @@ class RAGPipeline:
     def retrieve(self, query: str, k: int = RETRIEVAL_K) -> list[Document]:
         """Retrieve relevant documents for a query.
         
+        Uses hybrid retrieval (BM25 + dense with RRF) when advanced_retrieval
+        is enabled, otherwise falls back to dense-only retrieval.
+        
         Args:
             query: The search query.
             k: Number of documents to retrieve.
@@ -175,8 +224,71 @@ class RAGPipeline:
         Returns:
             List of relevant documents.
         """
+        if self.advanced_retrieval and self._bm25 is not None:
+            return self._hybrid_retrieve(query, k)
         retriever = self.get_retriever(k=k)
         return retriever.invoke(query)
+    
+    def _hybrid_retrieve(self, query: str, k: int) -> list[Document]:
+        """Combine dense vector search with BM25 using Reciprocal Rank Fusion.
+        
+        Retrieves 2*k candidates from dense, score-thresholded candidates from
+        BM25, then fuses with asymmetric weighting (dense 1.5x).
+        """
+        if not self._is_loaded:
+            self.ingest()
+
+        dense_results = self.vector_store.similarity_search(query, k=k * 2)
+
+        tokenized_query = self._tokenize(query)
+        bm25_scores = self._bm25.get_scores(tokenized_query)
+
+        if len(bm25_scores) == 0:
+            return dense_results[:k]
+
+        mean_score = float(sum(bm25_scores)) / len(bm25_scores)
+        std_score = (sum((s - mean_score) ** 2 for s in bm25_scores) / len(bm25_scores)) ** 0.5
+        threshold = mean_score + std_score
+
+        scored = [(i, bm25_scores[i]) for i in range(len(bm25_scores)) if bm25_scores[i] > threshold]
+        scored.sort(key=lambda x: x[1], reverse=True)
+        sparse_results = [self._bm25_docs[i] for i, _ in scored[:k * 2]]
+
+        return self._reciprocal_rank_fusion(dense_results, sparse_results, k, dense_weight=1.5)
+    
+    @staticmethod
+    def _reciprocal_rank_fusion(
+        list_a: list[Document],
+        list_b: list[Document],
+        k: int,
+        rrf_k: int = 60,
+        dense_weight: float = 1.0,
+    ) -> list[Document]:
+        """Merge two ranked document lists using RRF scoring.
+        
+        Args:
+            list_a: Dense retrieval results (weighted by dense_weight).
+            list_b: Sparse (BM25) retrieval results (weight 1.0).
+            k: Number of results to return.
+            rrf_k: RRF constant (default 60).
+            dense_weight: Multiplier for dense scores (>1.0 favors dense).
+        """
+        scores: dict[str, float] = {}
+        doc_map: dict[str, Document] = {}
+
+        for rank, doc in enumerate(list_a):
+            key = doc.page_content[:100]
+            scores[key] = scores.get(key, 0.0) + dense_weight / (rrf_k + rank + 1)
+            doc_map[key] = doc
+
+        for rank, doc in enumerate(list_b):
+            key = doc.page_content[:100]
+            scores[key] = scores.get(key, 0.0) + 1.0 / (rrf_k + rank + 1)
+            if key not in doc_map:
+                doc_map[key] = doc
+
+        ranked_keys = sorted(scores, key=scores.get, reverse=True)[:k]
+        return [doc_map[key] for key in ranked_keys]
     
     def similarity_search(self, query: str, k: int = RETRIEVAL_K) -> list[Document]:
         """Perform similarity search on the vector store.
@@ -218,12 +330,15 @@ _rag_pipeline: Optional[RAGPipeline] = None
 def get_rag_pipeline() -> RAGPipeline:
     """Get or create the RAG pipeline singleton.
     
+    Reads ADVANCED_RETRIEVAL env var to decide retrieval mode.
+    
     Returns:
         The RAG pipeline instance.
     """
     global _rag_pipeline
     if _rag_pipeline is None:
-        _rag_pipeline = RAGPipeline()
+        use_advanced = os.environ.get("ADVANCED_RETRIEVAL", "false").lower() == "true"
+        _rag_pipeline = RAGPipeline(advanced_retrieval=use_advanced)
         _rag_pipeline.ingest()
     return _rag_pipeline
 

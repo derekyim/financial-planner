@@ -21,7 +21,7 @@ class TestRAGEvalRunner:
         from evals.rag_evals import RAGEvalRunner
 
         runner = RAGEvalRunner()
-        assert len(runner.metrics) == 6
+        assert len(runner.metrics) == 7
 
     @patch("evals.rag_evals.OpenAIEmbeddings")
     @patch("evals.rag_evals.ChatOpenAI")

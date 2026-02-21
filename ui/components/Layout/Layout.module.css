@@ -108,3 +108,19 @@
   min-height: 100vh;
   background-color: var(--BACKGROUND-DEFAULT);
 }
+
+.chatEmpty {
+  display: block;
+  padding: 8px 36px;
+  color: var(--TEXT-DISABLED);
+}
+
+.chatDeleteBtn {
+  opacity: 0;
+  transition: opacity 0.15s ease !important;
+  color: var(--TEXT-DISABLED) !important;
+}
+
+.navItemNested:hover .chatDeleteBtn {
+  opacity: 1;
+}

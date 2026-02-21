@@ -26,7 +26,7 @@ class TestRecallAgentNode:
         # Mock the invoke method to return an AI message
         mock.invoke = MagicMock(return_value=AIMessage(
             content="EBITDA is calculated as EBIT + Depreciation + Amortization. "
-                    "In this model, it's located at M - Monthly!K194 with formula =K191+K192+K193."
+                    "In this model, it's located at operations!K194 with formula =K191+K192+K193."
         ))
         return mock
 
@@ -86,7 +86,7 @@ class TestRecallAgentResponses:
         response.tool_calls = [
             {
                 "name": "read_cell_formula",
-                "args": {"sheet_name": "M - Monthly", "cell_notation": "K194"},
+                "args": {"sheet_name": "operations", "cell_notation": "K194"},
                 "id": "call_1"
             }
         ]

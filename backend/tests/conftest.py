@@ -48,7 +48,7 @@ Row 3 contains if this period is an "Actual" or historical value or a "Forecast"
 
 === CRITICAL FORMULAS ===
 ==== EBITDA ====
-Location: 'M - Monthly'!Row 194  |  Formula: =Row191 + Row192 + Row193
+Location: 'operations'!Row 194  |  Formula: =Row191 + Row192 + Row193
 EBITDA = EBIT + Depreciation + Amortization
 """
 
@@ -63,7 +63,7 @@ SAMPLE_KEY_DRIVERS_DATA = [
     ["Key Result", "cash", "Cash", "", "", "", "", "", "", "", "1285003", "1350000", "1420000"],
 ]
 
-# Sample M - Monthly data
+# Sample operations data
 SAMPLE_M_MONTHLY_DATA = [
     ["", "", ""],
     ["", "", "", "", "", "", "", "", "", "", "Jan-25", "Feb-25", "Mar-25"],
@@ -81,7 +81,7 @@ def mock_sheets_client():
             return [[line] for line in SAMPLE_MODEL_DOCUMENTATION.split("\n")]
         elif sheet_name == "Key Drivers and Results":
             return SAMPLE_KEY_DRIVERS_DATA
-        elif sheet_name == "M - Monthly":
+        elif sheet_name == "operations":
             return SAMPLE_M_MONTHLY_DATA
         elif sheet_name == "AuditLog":
             return [["Timestamp", "Requested By", "Status", "Description", "Data"]]
@@ -91,18 +91,18 @@ def mock_sheets_client():
     
     def mock_read_cell(url, sheet_name, cell_notation):
         cell_values = {
-            ("M - Monthly", "K194"): "1228810",
-            ("M - Monthly", "K191"): "1200000",
-            ("M - Monthly", "K192"): "15000",
-            ("M - Monthly", "K193"): "13810",
-            ("M - Monthly", "K92"): "21346139",
+            ("operations", "K194"): "1228810",
+            ("operations", "K191"): "1200000",
+            ("operations", "K192"): "15000",
+            ("operations", "K193"): "13810",
+            ("operations", "K92"): "21346139",
         }
         return cell_values.get((sheet_name, cell_notation), "0")
     
     def mock_read_cell_formula(url, sheet_name, cell_notation):
         formulas = {
-            ("M - Monthly", "K194"): "=K191+K192+K193",
-            ("M - Monthly", "K92"): "=K80+K81",
+            ("operations", "K194"): "=K191+K192+K193",
+            ("operations", "K92"): "=K80+K81",
         }
         return formulas.get((sheet_name, cell_notation), "")
     

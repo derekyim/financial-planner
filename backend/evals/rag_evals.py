@@ -14,6 +14,7 @@ from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.metrics import (
     LLMContextRecall,
+    LLMContextPrecisionWithReference,
     Faithfulness,
     FactualCorrectness,
     ResponseRelevancy,
@@ -38,6 +39,7 @@ class RAGEvalRunner:
         self.run_config = RunConfig(timeout=timeout)
         self.metrics = [
             LLMContextRecall(),
+            LLMContextPrecisionWithReference(),
             Faithfulness(),
             FactualCorrectness(),
             ResponseRelevancy(),
@@ -74,7 +76,11 @@ class RAGEvalRunner:
             )
         return samples
 
-    def run(self, samples: list[SingleTurnSample]) -> dict:
+    def run(
+        self,
+        samples: list[SingleTurnSample],
+        experiment_name: str | None = None,
+    ) -> dict:
         """Execute RAGAS evaluation and return results dict."""
         dataset = EvaluationDataset(samples=samples)
         results = evaluate(
@@ -83,5 +89,6 @@ class RAGEvalRunner:
             llm=self.llm,
             embeddings=self.embeddings,
             run_config=self.run_config,
+            experiment_name=experiment_name,
         )
         return results

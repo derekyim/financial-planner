@@ -9,8 +9,11 @@ Uses LangGraph for orchestration and all 5 memory types for context.
 
 import os
 import uuid
+import warnings
 from typing import Annotated, Literal, Optional, Any
 from typing_extensions import TypedDict
+
+warnings.filterwarnings("ignore", message="Pydantic serializer warnings")
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
@@ -32,6 +35,7 @@ from agents.tools import (
     read_model_documentation,
     write_to_audit_log,
 )
+from agents.strategic_tools import STRATEGIC_TOOLS
 from agents.memory_types import (
     ShortTermMemory,
     LongTermMemory,
@@ -308,32 +312,35 @@ Answer the user's question helpfully. If they need detailed analysis, suggest th
 # Strategic Guidance Agent Node (RAG-powered)
 # -----------------------------------------------------------------------------
 
-def create_strategic_guidance_node(llm: ChatOpenAI):
-    """Create the Strategic Guidance agent node with RAG.
+def create_strategic_guidance_node(llm: ChatOpenAI, tools: list):
+    """Create the Strategic Guidance agent node with RAG + web search.
 
     Args:
         llm: The LLM to use for the agent.
+        tools: Tools available to this agent (includes Tavily web search).
 
     Returns:
         The strategic guidance agent node function.
     """
+    llm_with_tools = llm.bind_tools(tools)
+
     def strategic_guidance_node(state: FinancialAgentState) -> dict:
         """The strategic guidance agent provides RAG-powered business advice."""
         print("[Strategic Guidance Agent] Processing request...")
 
-        # Get the user's question
         user_question = ""
         for msg in reversed(state["messages"]):
             if isinstance(msg, HumanMessage):
                 user_question = msg.content
                 break
 
-        # Retrieve relevant context from knowledge base
         print("[Strategic Guidance Agent] Retrieving context from knowledge base...")
         rag_context = retrieve_context(user_question, k=5)
         print(f"[Strategic Guidance Agent] Retrieved context ({len(rag_context)} chars)")
 
-        # Build messages with system prompt, model context, and RAG context
+        from datetime import date
+        today = date.today().isoformat()
+
         model_docs = state.get("model_documentation", "")
         system_content = f"""{STRATEGIC_GUIDANCE_PROMPT}
 
@@ -342,12 +349,13 @@ def create_strategic_guidance_node(llm: ChatOpenAI):
 
 ## Retrieved Business Knowledge
 {rag_context}
+
+## IMPORTANT: Today's date is {today}.
+Your training data is outdated. For ANY question about recent events, trends, or current practices, you MUST call the web_search tool FIRST before responding. The tool automatically restricts to the last 90 days. Do not answer from memory when current data is available.
 """
 
         messages = [SystemMessage(content=system_content)] + state["messages"]
-
-        # Call the LLM
-        response = llm.invoke(messages)
+        response = llm_with_tools.invoke(messages)
 
         print(f"[Strategic Guidance Agent] Generated response.")
         return {"messages": [response]}
@@ -421,12 +429,13 @@ def create_financial_agent(
     supervisor_node = create_supervisor_node(supervisor_llm)
     recall_node = create_recall_agent_node(agent_llm)
     goal_seek_node = create_goal_seek_agent_node(agent_llm)
-    strategic_node = create_strategic_guidance_node(agent_llm)
+    strategic_node = create_strategic_guidance_node(agent_llm, STRATEGIC_TOOLS)
     respond_node = create_respond_node(agent_llm)
 
     # Create tool nodes
     recall_tool_node = ToolNode(READ_ONLY_TOOLS)
     goal_seek_tool_node = ToolNode(GOAL_SEEK_TOOLS)
+    strategic_tool_node = ToolNode(STRATEGIC_TOOLS)
 
     # Build the graph
     builder = StateGraph(FinancialAgentState)
@@ -439,6 +448,7 @@ def create_financial_agent(
     builder.add_node("goal_seek", goal_seek_node)
     builder.add_node("goal_seek_tools", goal_seek_tool_node)
     builder.add_node("strategic", strategic_node)
+    builder.add_node("strategic_tools", strategic_tool_node)
     builder.add_node("respond", respond_node)
 
     # Add edges
@@ -474,8 +484,13 @@ def create_financial_agent(
     )
     builder.add_edge("goal_seek_tools", "goal_seek")
 
-    # Strategic guidance ends (no tools)
-    builder.add_edge("strategic", END)
+    # Strategic guidance agent -> tools -> strategic (loop) or end
+    builder.add_conditional_edges(
+        "strategic",
+        should_continue_after_agent,
+        {"tools": "strategic_tools", "end": END},
+    )
+    builder.add_edge("strategic_tools", "strategic")
 
     # Direct response ends
     builder.add_edge("respond", END)
@@ -509,7 +524,7 @@ def setup_agent(
         tab_names: Optional dict to configure tab names. Keys:
             - model_documentation: Tab with model docs
             - key_drivers_results: Tab with KPIs  
-            - main_monthly: Main operations tab (default: "M - Monthly")
+            - main_monthly: Main operations tab (default: "operations")
             - tasks: Tasks tab
             - audit_log: Audit log tab
     """

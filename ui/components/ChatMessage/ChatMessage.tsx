@@ -3,6 +3,7 @@ import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import { APP_SHORT_NAME } from '@/constants';
 import styles from './ChatMessage.module.css';
 
 type ChatMessageProps = {
@@ -29,7 +30,7 @@ export default function ChatMessage({ message, isUser, timestamp }: ChatMessageP
           variant="body2" 
           className={`${styles.sender} ${isUser ? styles.senderUser : styles.senderAi}`}
         >
-          {isUser ? 'You' : 'Mental Coach'}
+          {isUser ? 'You' : APP_SHORT_NAME}
         </Typography>
         <Typography 
           variant="body1" 

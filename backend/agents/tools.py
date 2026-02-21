@@ -22,7 +22,7 @@ _service_account_email: Optional[str] = None
 _tab_config = {
     "model_documentation": "Model Documentation",
     "key_drivers_results": "Key Drivers and Results",
-    "main_monthly": "M - Monthly",  # Main operations tab
+    "main_monthly": "operations",  # Main operations tab
     "tasks": "Tasks",
     "audit_log": "AuditLog",
 }
@@ -41,7 +41,7 @@ def initialize_tools(
         tab_names: Optional dict to override default tab names. Keys:
             - model_documentation: Tab with model docs (default: "Model Documentation")
             - key_drivers_results: Tab with KPIs (default: "Key Drivers and Results")
-            - main_monthly: Main operations tab (default: "M - Monthly")
+            - main_monthly: Main operations tab (default: "operations")
             - tasks: Tasks tab (default: "Tasks")
             - audit_log: Audit log tab (default: "AuditLog")
     """
@@ -71,7 +71,7 @@ def _resolve_sheet_name(sheet_name: str) -> str:
     """Resolve a sheet name to its actual name in the spreadsheet.
     
     This handles cases where the model documentation mentions tab names
-    that differ from the actual spreadsheet (e.g., "M - Monthly" vs "operations").
+    that differ from the actual spreadsheet tab names.
     
     Args:
         sheet_name: The sheet name to resolve.

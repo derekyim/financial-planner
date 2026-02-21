@@ -21,7 +21,7 @@ class TestRAGASEvaluatorInit:
         evaluator = RAGASEvaluator(evaluator_model="gpt-4o-mini")
         assert evaluator.evaluator_model == "gpt-4o-mini"
         assert evaluator.timeout == 360
-        assert len(evaluator.rag_metrics) == 5
+        assert len(evaluator.rag_metrics) == 6
 
     @patch("shared.evaluations.OpenAIEmbeddings")
     @patch("shared.evaluations.ChatOpenAI")
@@ -80,6 +80,7 @@ class TestEvaluationResults:
 
         result = RAGEvaluationResult(
             context_recall=0.85,
+            context_precision=0.81,
             faithfulness=0.90,
             factual_correctness=0.88,
             response_relevancy=0.92,

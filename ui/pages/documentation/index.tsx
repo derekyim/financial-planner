@@ -10,6 +10,7 @@ import ListItemText from '@mui/material/ListItemText';
 import StorageIcon from '@mui/icons-material/Storage';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import NextPlanIcon from '@mui/icons-material/NextPlan';
+import { APP_NAME } from '@/constants';
 import styles from '@/styles/content.module.css';
 
 const SECTIONS = [
@@ -29,7 +30,7 @@ const SECTIONS = [
     href: '/documentation/next-steps',
     icon: <NextPlanIcon />,
     title: 'Next Steps',
-    description: 'Roadmap for Demo Day and future improvements to the application.',
+    description: 'Roadmap for Future improvements to the application.',
   },
 ];
 
@@ -37,14 +38,14 @@ export default function DocumentationPage() {
   return (
     <>
       <Head>
-        <title>Documentation | Dysprosium Financial Planner</title>
+        <title>{`Documentation | ${APP_NAME}`}</title>
       </Head>
       <Box className={styles.page}>
         <Typography variant="h4" className={styles.pageTitle}>
           Documentation
         </Typography>
         <Typography variant="subtitle1" className={styles.pageSubtitle}>
-          Technical documentation for the Dysprosium Financial Planner system
+          Technical documentation for the {APP_NAME} system
         </Typography>
 
         <Paper className={styles.card} elevation={0}>

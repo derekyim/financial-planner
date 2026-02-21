@@ -3,6 +3,7 @@ uv.lock
 ui/node_modules/
 ui/.next/
 
+
 # Backend secrets
 backend/.env
 backend/credentials.json

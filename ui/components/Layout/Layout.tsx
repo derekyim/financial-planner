@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Box from '@mui/material/Box';
@@ -13,6 +13,8 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
+import Tooltip from '@mui/material/Tooltip';
+import Badge from '@mui/material/Badge';
 import MenuIcon from '@mui/icons-material/Menu';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
@@ -29,7 +31,15 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import ChatIcon from '@mui/icons-material/Chat';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { tourEngine } from '@/services/TourEngine';
+import { chatSessionStore, type ChatSession } from '@/services/chatSessionStore';
+import { logStore } from '@/services/logStore';
+import { APP_NAME, APP_SHORT_NAME } from '@/constants';
+import DebugPane, { DEBUG_PANE_WIDTH } from '@/components/DebugPane/DebugPane';
 import styles from './Layout.module.css';
 
 const DRAWER_WIDTH = 260;
@@ -72,7 +82,27 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     Documentation: true,
     Evals: true,
+    Chats: true,
   });
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [logCount, setLogCount] = useState(0);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+
+  const isAgentPage = router.pathname === '/';
+
+  useEffect(() => {
+    setLogCount(logStore.getAll().length);
+    const unsub = logStore.subscribe(() => {
+      setLogCount(logStore.getAll().length);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    setSessions(chatSessionStore.getAll());
+    const unsub = chatSessionStore.subscribe(() => setSessions(chatSessionStore.getAll()));
+    return unsub;
+  }, []);
 
   function handleToggleSection(label: string) {
     setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -90,12 +120,31 @@ export default function Layout({ children }: { children: ReactNode }) {
     return `nav-${label.toLowerCase().replace(/\s+/g, '-')}`;
   }
 
+  function handleSelectChat(sessionId: string) {
+    if (router.pathname !== '/') {
+      router.push('/');
+    }
+    setTimeout(() => window.dispatchEvent(new CustomEvent('select-chat', { detail: sessionId })), 50);
+  }
+
+  function handleNewChat() {
+    if (router.pathname !== '/') {
+      router.push('/');
+    }
+    setTimeout(() => window.dispatchEvent(new CustomEvent('new-chat')), 50);
+  }
+
+  function handleDeleteChat(e: React.MouseEvent, sessionId: string) {
+    e.stopPropagation();
+    chatSessionStore.remove(sessionId);
+  }
+
   const drawerContent = (
     <Box className={styles.drawerInner} data-tour="nav-sidebar">
       <Box className={styles.drawerHeader}>
         <SmartToyIcon className={styles.drawerLogo} />
         <Typography variant="h6" className={styles.drawerTitle}>
-          Dysprosium AI
+          {APP_SHORT_NAME}
         </Typography>
       </Box>
       <Divider />
@@ -147,6 +196,61 @@ export default function Layout({ children }: { children: ReactNode }) {
           );
         })}
       </List>
+
+      <Divider sx={{ mt: 1, mb: 0.5 }} />
+
+      {/* Chats section */}
+      <Box data-tour="nav-chats">
+        <ListItemButton
+          onClick={() => handleToggleSection('Chats')}
+          className={styles.navItem}
+        >
+          <ListItemIcon className={styles.navIcon}><ChatIcon /></ListItemIcon>
+          <ListItemText primary="Chats" />
+          <Tooltip title="New chat">
+            <IconButton
+              size="small"
+              onClick={(e) => { e.stopPropagation(); handleNewChat(); }}
+              sx={{ mr: -0.5 }}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {openSections.Chats ? <ExpandLess /> : <ExpandMore />}
+        </ListItemButton>
+        <Collapse in={openSections.Chats ?? false} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            {sessions.length === 0 && (
+              <Typography variant="caption" className={styles.chatEmpty}>
+                No conversations yet
+              </Typography>
+            )}
+            {sessions.map((session) => (
+              <ListItemButton
+                key={session.id}
+                className={styles.navItemNested}
+                onClick={() => handleSelectChat(session.id)}
+              >
+                <ListItemText
+                  primary={session.title}
+                  primaryTypographyProps={{
+                    variant: 'body2',
+                    noWrap: true,
+                    sx: { maxWidth: 160 },
+                  }}
+                />
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleDeleteChat(e, session.id)}
+                  className={styles.chatDeleteBtn}
+                >
+                  <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </ListItemButton>
+            ))}
+          </List>
+        </Collapse>
+      </Box>
     </Box>
   );
 
@@ -163,8 +267,28 @@ export default function Layout({ children }: { children: ReactNode }) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap className={styles.appTitle} sx={{ flexGrow: 1 }}>
-            Dysprosium Financial Planner
+            {APP_NAME}
           </Typography>
+
+          {isAgentPage && (
+            <Tooltip title="Agent Activity">
+              <IconButton
+                onClick={() => setDebugOpen((prev) => !prev)}
+                aria-label="Toggle debug pane"
+                sx={{ color: debugOpen ? 'var(--GOOGLE-BLUE)' : 'var(--TEXT-SECONDARY)' }}
+              >
+                <Badge
+                  badgeContent={debugOpen ? 0 : logCount}
+                  color="primary"
+                  max={99}
+                  sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', minWidth: 16, height: 16 } }}
+                >
+                  <BugReportIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+          )}
+
           <IconButton
             onClick={() => {
               tourEngine.reset('main');
@@ -179,7 +303,6 @@ export default function Layout({ children }: { children: ReactNode }) {
       </AppBar>
 
       <Box component="nav" className={styles.drawerContainer}>
-        {/* Mobile drawer */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -193,7 +316,6 @@ export default function Layout({ children }: { children: ReactNode }) {
           {drawerContent}
         </Drawer>
 
-        {/* Desktop drawer */}
         <Drawer
           variant="permanent"
           sx={{
@@ -206,10 +328,20 @@ export default function Layout({ children }: { children: ReactNode }) {
         </Drawer>
       </Box>
 
-      <Box component="main" className={styles.main} sx={{ marginLeft: { md: `${DRAWER_WIDTH}px` } }}>
+      <Box
+        component="main"
+        className={styles.main}
+        sx={{
+          marginLeft: { md: `${DRAWER_WIDTH}px` },
+          marginRight: isAgentPage && debugOpen ? `${DEBUG_PANE_WIDTH}px` : 0,
+          transition: 'margin-right 225ms cubic-bezier(0, 0, 0.2, 1)',
+        }}
+      >
         <Toolbar />
         {children}
       </Box>
+
+      {isAgentPage && <DebugPane open={debugOpen} onClose={() => setDebugOpen(false)} />}
     </Box>
   );
 }

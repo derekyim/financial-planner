@@ -167,8 +167,8 @@ Column K is the FIRST column of the date spine, this occurs in cell K2 and conti
 Column K months are represented as the fiscal 'last day of the month'
 Row 2 contains the date spine
 Row 3 contains if this period is an "Actual" or historical value or a "Forecast" value
-The "M - Monthly" tab contains most all of the businesses Results and is the tab that rolls up the Income Statement, Balance Sheet and Cash Flow.  Looking at the "Forecast" column here should be used when answering 'what if' questions for future months
-A number of schedule tabs like (DTC, Wholesale, Opex, Assets, AMZN, DTC - Acquisition, DTC - OTP, DTC - SUB, AMZN - OTP, AMZN - SUB, and more) work together to produce data that is fed back into M - Monthly as the final financial plan
+The "operations" tab contains most all of the businesses Results and is the tab that rolls up the Income Statement, Balance Sheet and Cash Flow.  Looking at the "Forecast" column here should be used when answering 'what if' questions for future months
+A number of schedule tabs like (DTC, Wholesale, Opex, Assets, AMZN, DTC - Acquisition, DTC - OTP, DTC - SUB, AMZN - OTP, AMZN - SUB, and more) work together to produce data that is fed back into operations as the final financial plan
 Tab naming convention 1: DTC -> usually means a Shopify business, AMZN -> Amazon online, Wholesale -> Wholesale or retail sales
 Tab naming convention 2: OTP -> one time purchase, SUB -> Subscription,  AnnualSub -> Annual Subscriptions 
 If a cell value in one of the "Schedule" tabs contains •, it is a driver and is what should be changed to run forward looking 'scenarios'.  only change values in columns marked as "Forecast", since you can't change "Acutal" numbers in the past
@@ -177,7 +177,7 @@ the tab "Key Drivers and Results" is a READ ONLY tab for the user to see high le
  
 === First Steps ===
 When you open a file, consult the "Critical Formulas" area and understand these formulas
-If the customer asks you to do something you cannot do, start from M - Monthly, find the appropriate metric they are looking to optimize for and make a PLAN first to read through the formula chain for a single "Forecast" month 
+If the customer asks you to do something you cannot do, start from operations, find the appropriate metric they are looking to optimize for and make a PLAN first to read through the formula chain for a single "Forecast" month 
 After you have the plan then repeat back to the user your plan and ask for guidance to proceed.
 
 
@@ -198,7 +198,7 @@ If you complete a "Task" then mark the 'Status' column on the Tasks tab as 'succ
 ==== EBITDA ====
 
 
-Location: 'M - Monthly'!Row 194  |  Formula: =Row191 + Row192 + Row193
+Location: 'operations'!Row 194  |  Formula: =Row191 + Row192 + Row193
 EBITDA = EBIT + Depreciation + Amortization
 
 

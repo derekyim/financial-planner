@@ -2,91 +2,101 @@
   {
     "question": "What is EBITDA and why is it important?",
     "reference": "EBITDA stands for Earnings Before Interest, Taxes, Depreciation, and Amortization. It's a measure of operating performance that shows profitability before accounting for financial decisions and tax effects.",
-    "topics": [
-      "finance",
-      "metrics",
-      "profitability"
-    ]
+    "topics": ["finance", "metrics", "profitability"]
   },
   {
     "question": "How is Customer Acquisition Cost (CAC) calculated?",
     "reference": "Customer Acquisition Cost (CAC) is the total cost of acquiring a new customer, including marketing and sales expenses, divided by the number of new customers acquired.",
-    "topics": [
-      "finance",
-      "marketing",
-      "metrics"
-    ]
+    "topics": ["finance", "marketing", "metrics"]
   },
   {
     "question": "What is the difference between Gross Profit and Net Income?",
     "reference": "Gross Profit is revenue minus cost of goods sold, while Net Income is the bottom line profit after all expenses, interest, and taxes are deducted.",
-    "topics": [
-      "finance",
-      "profitability",
-      "accounting"
-    ]
+    "topics": ["finance", "profitability", "accounting"]
   },
   {
     "question": "What are the key elements of Amazon listing optimization?",
     "reference": "Key elements include optimized title with keywords, compelling bullet points, high-quality images, backend keywords, and competitive pricing.",
-    "topics": [
-      "amazon",
-      "ecommerce",
-      "optimization"
-    ]
+    "topics": ["amazon", "ecommerce", "optimization"]
   },
   {
     "question": "What is the difference between FBA and FBM on Amazon?",
     "reference": "FBA (Fulfillment by Amazon) means Amazon stores and ships your products, while FBM (Fulfillment by Merchant) means you handle storage and shipping yourself.",
-    "topics": [
-      "amazon",
-      "fulfillment",
-      "logistics"
-    ]
+    "topics": ["amazon", "fulfillment", "logistics"]
   },
   {
     "question": "What is a good ROAS target for Meta advertising?",
     "reference": "A good ROAS (Return on Ad Spend) target is typically 3x or higher for profitability, meaning $3 in revenue for every $1 spent on ads.",
-    "topics": [
-      "advertising",
-      "meta",
-      "metrics"
-    ]
+    "topics": ["advertising", "meta", "metrics"]
   },
   {
     "question": "How should I structure my Meta ads funnel?",
     "reference": "Structure with Top of Funnel (60-70% budget) for prospecting, Middle of Funnel (20-30%) for retargeting engaged users, and Bottom of Funnel (10-20%) for conversion.",
-    "topics": [
-      "advertising",
-      "meta",
-      "strategy"
-    ]
+    "topics": ["advertising", "meta", "strategy"]
   },
   {
     "question": "How can I reduce warehouse costs?",
     "reference": "Reduce warehouse costs through demand forecasting, ABC inventory analysis for layout optimization, batch picking, and negotiating with carriers for better shipping rates.",
-    "topics": [
-      "operations",
-      "warehouse",
-      "cost optimization"
-    ]
+    "topics": ["operations", "warehouse", "cost optimization"]
   },
   {
     "question": "What is the formula for safety stock?",
-    "reference": "Safety Stock = (Max Daily Sales \u00d7 Max Lead Time) - (Average Daily Sales \u00d7 Average Lead Time).",
-    "topics": [
-      "operations",
-      "inventory",
-      "logistics"
-    ]
+    "reference": "Safety Stock = (Max Daily Sales × Max Lead Time) - (Average Daily Sales × Average Lead Time).",
+    "topics": ["operations", "inventory", "logistics"]
   },
   {
     "question": "What are essential Shopify apps for ecommerce?",
     "reference": "Essential apps include email marketing (Klaviyo), reviews (Judge.me), SMS marketing (Postscript), subscriptions (Recharge), and analytics (Triple Whale).",
-    "topics": [
-      "shopify",
-      "ecommerce",
-      "tools"
-    ]
+    "topics": ["shopify", "ecommerce", "tools"]
+  },
+  {
+    "question": "Our revenue is growing 15% year-over-year but EBITDA is declining. What are the most likely causes and what should we diagnose first?",
+    "reference": "When EBITDA falls while revenue rises, the most likely causes are: CAC rising faster than sales growth, higher discounting eroding margins, freight cost inflation, fulfillment inefficiency, or inventory write-offs. Diagnostic steps: 1) check CAC trend, 2) check discount percentage, 3) check freight cost per order, 4) review inventory adjustments.",
+    "topics": ["finance", "diagnostics", "profitability"]
+  },
+  {
+    "question": "How do you calculate the Cash Conversion Cycle and what does a negative CCC mean for an ecommerce business?",
+    "reference": "Cash Conversion Cycle = DIO + DSO - DPO, where DIO = Avg Inventory / COGS × 365, DSO = Accounts Receivable / Revenue × 365, DPO = Accounts Payable / COGS × 365. A negative CCC means the business collects cash from customers before it has to pay suppliers, which is possible for strong ecommerce brands and improves liquidity.",
+    "topics": ["finance", "cash flow", "metrics"]
+  },
+  {
+    "question": "We have strong profits on paper but our cash balance keeps declining. What are the typical ecommerce causes and how should a CFO investigate?",
+    "reference": "Cash declining despite profit is typically caused by: inventory growth (building stock faster than selling), delayed receivables, supplier prepayments, or capex spending. The key rule is Profit ≠ Cash. Diagnostic steps: 1) compare inventory levels vs prior months, 2) review AR aging, 3) inspect PO timing, 4) review capex ledger.",
+    "topics": ["finance", "cash flow", "diagnostics"]
+  },
+  {
+    "question": "What is Contribution Margin and why is it critical for determining whether to scale marketing spend?",
+    "reference": "Contribution Margin = Revenue - COGS - Fulfillment - Payment Fees. It determines marketing scalability because if CAC exceeds Contribution Margin, then growth destroys cash — every new customer acquired costs more than the margin they generate.",
+    "topics": ["finance", "marketing", "unit economics"]
+  },
+  {
+    "question": "How should a CFO set up a 13-week cash flow forecast and what reporting cadence is standard?",
+    "reference": "Ending Cash = Beginning Cash + Cash Inflows - Cash Outflows. Inflows include customer receipts, financing, and tax refunds. Outflows include inventory purchases, payroll, marketing, rent, and debt service. Standard reporting: weekly cash balance and runway, weekly sales vs forecast, monthly Income Statement vs Budget, monthly Cash Flow Forecast (13-week + annual), and monthly KPI bridge from Revenue to EBITDA to Cash.",
+    "topics": ["finance", "cash flow", "reporting"]
+  },
+  {
+    "question": "What is the formula for calculating the Reorder Point for inventory and how does it relate to the Purchase Requirement calculation?",
+    "reference": "Reorder Point = Average Daily Sales × Lead Time + Safety Stock. The Purchase Requirement is a separate calculation: Required Purchase = Forecast Sales + Target Ending Inventory - Beginning Inventory. Safety stock should reflect supplier reliability, sales volatility, and seasonality risk.",
+    "topics": ["operations", "inventory", "planning"]
+  },
+  {
+    "question": "What are the key inventory risk signals that should trigger a CFO review?",
+    "reference": "Key inventory risk signals include: inventory growing faster than sales, stockouts on top SKUs, aging stock greater than 180 days, and frequent freight expediting. These signals indicate potential cash traps or lost revenue opportunities.",
+    "topics": ["operations", "inventory", "risk"]
+  },
+  {
+    "question": "How should QuickBooks, NetSuite, and Xero each be configured for multi-channel ecommerce accounting?",
+    "reference": "QuickBooks: separate revenue accounts by channel, reconcile payment processors weekly, sync ecommerce platform daily, lock prior months after closing. NetSuite: use Location for warehouse, Class for product category, Department for business unit, maintain saved searches for KPI reporting. Xero: use tracking categories for channels, maintain separate clearing accounts, reconcile bank feeds daily.",
+    "topics": ["finance", "ERP", "accounting"]
+  },
+  {
+    "question": "A company has Revenue of $603,958, COGS of $288,321, Fulfillment of $73,717, Marketing of $91,670, Operating Expenses of $61,076, and D&A of $11,634. What is the EBITDA?",
+    "reference": "EBITDA = Revenue - COGS - Fulfillment - Marketing - Operating Expenses + D&A = 603,958 - 288,321 - 73,717 - 91,670 - 61,076 + 11,634 = 100,808. The expected numeric answer is 100,808.",
+    "topics": ["finance", "calculation", "EBITDA"]
+  },
+  {
+    "question": "What channel-specific financial metrics should a CFO monitor for Amazon versus Shopify DTC versus Wholesale?",
+    "reference": "Amazon: monitor referral fees, FBA storage costs, and Amazon-specific ad spend (ACoS). Shopify DTC: track customer acquisition cost by source, subscription vs one-time revenue mix, and email revenue share. Wholesale: watch payment terms (Net 30/60), deduction rates, and retailer velocity by door. Channel mix shifts directly impact blended margins and working capital needs.",
+    "topics": ["finance", "channels", "ecommerce"]
   }
 ]

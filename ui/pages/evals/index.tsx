@@ -9,6 +9,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import { APP_NAME } from '@/constants';
 import styles from '@/styles/content.module.css';
 
 const SECTIONS = [
@@ -30,7 +31,7 @@ export default function EvalsPage() {
   return (
     <>
       <Head>
-        <title>Evals | Dysprosium Financial Planner</title>
+        <title>{`Evals | ${APP_NAME}`}</title>
       </Head>
       <Box className={styles.page}>
         <Typography variant="h4" className={styles.pageTitle}>

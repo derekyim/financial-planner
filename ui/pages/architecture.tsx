@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Chip from '@mui/material/Chip';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import { APP_NAME, EMBEDDING_MODEL } from '@/constants';
 import styles from '@/styles/content.module.css';
 import archStyles from './architecture.module.css';
 
@@ -38,7 +39,7 @@ export default function ArchitecturePage() {
   return (
     <>
       <Head>
-        <title>Architecture | Dysprosium Financial Planner</title>
+        <title>{`Architecture | ${APP_NAME}`}</title>
       </Head>
       <Box className={styles.page}>
         <Typography variant="h4" className={styles.pageTitle}>
@@ -152,7 +153,7 @@ export default function ArchitecturePage() {
           <ul className={styles.list}>
             <li className={styles.listItem}><strong>Short-Term Memory</strong> &mdash; Conversation history via LangGraph checkpointer (MemorySaver).</li>
             <li className={styles.listItem}><strong>Long-Term Memory</strong> &mdash; Cross-session facts stored in InMemoryStore, persisted across threads.</li>
-            <li className={styles.listItem}><strong>Semantic Memory</strong> &mdash; Embedding-indexed knowledge with text-embedding-3-small for similarity search.</li>
+            <li className={styles.listItem}><strong>Semantic Memory</strong> &mdash; Embedding-indexed knowledge with {EMBEDDING_MODEL} for similarity search.</li>
             <li className={styles.listItem}><strong>Episodic Memory</strong> &mdash; Timestamped records of past agent interactions and outcomes.</li>
             <li className={styles.listItem}><strong>Procedural Memory</strong> &mdash; Agent playbooks and standard operating procedures for each task type.</li>
           </ul>

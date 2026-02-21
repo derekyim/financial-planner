@@ -1,6 +1,7 @@
 import type { Step, CallBackProps, STATUS_EVENTS } from 'react-joyride';
+import { APP_NAME, TOUR_STORAGE_KEY } from '@/constants';
 
-const STORAGE_KEY = 'dp-tour-completed';
+const STORAGE_KEY = TOUR_STORAGE_KEY;
 
 export type TourId = 'main';
 
@@ -15,7 +16,7 @@ const MAIN_TOUR: TourDefinition = {
     {
       target: 'body',
       content:
-        'Welcome to Dysprosium Financial Planner! This quick tour will show you the key areas of the application.',
+        `Welcome to ${APP_NAME}! This quick tour will show you the key areas of the application.`,
       placement: 'center',
       disableBeacon: true,
     },
@@ -34,7 +35,7 @@ const MAIN_TOUR: TourDefinition = {
     {
       target: '[data-tour="nav-documentation"]',
       content:
-        'Documentation covers the RAG application, evaluation approach, and next steps for Demo Day.',
+        'Documentation covers the RAG application, evaluation approach, and next steps for Future improvements.',
       placement: 'right',
     },
     {

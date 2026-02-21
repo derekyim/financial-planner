@@ -8,10 +8,12 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import { APP_NAME } from '@/constants';
 import styles from '@/styles/content.module.css';
 
 const RAG_METRICS = [
   { metric: 'LLMContextRecall', description: 'Measures whether all relevant context was retrieved from the knowledge base.', range: '0.0 - 1.0' },
+  { metric: 'LLMContextPrecision', description: 'Measures whether the retrieved context is precise and not diluted with irrelevant documents.', range: '0.0 - 1.0' },
   { metric: 'Faithfulness', description: 'Checks if the generated response is factually grounded in the retrieved context.', range: '0.0 - 1.0' },
   { metric: 'FactualCorrectness', description: 'Validates the factual accuracy of claims made in the response.', range: '0.0 - 1.0' },
   { metric: 'ResponseRelevancy', description: 'Measures how well the response addresses the original question.', range: '0.0 - 1.0' },
@@ -28,7 +30,7 @@ export default function EvalsDocPage() {
   return (
     <>
       <Head>
-        <title>Evals Approach | Dysprosium Financial Planner</title>
+        <title>{`Evals Approach | ${APP_NAME}`}</title>
       </Head>
       <Box className={styles.page}>
         <Typography variant="h4" className={styles.pageTitle}>

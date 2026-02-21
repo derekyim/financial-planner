@@ -1,0 +1,113 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.plusButton {
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--BORDER-COLOR) !important;
+  border-radius: 50% !important;
+  color: var(--TEXT-SECONDARY) !important;
+  transition: all 0.15s ease !important;
+}
+
+.plusButton:hover {
+  border-color: var(--GOOGLE-BLUE) !important;
+  color: var(--GOOGLE-BLUE) !important;
+  background-color: rgba(66, 133, 244, 0.06) !important;
+}
+
+.activeChip {
+  max-width: 180px;
+  font-size: 0.8rem !important;
+  border-color: var(--GOOGLE-BLUE) !important;
+  color: var(--GOOGLE-BLUE) !important;
+}
+
+.menuPaper {
+  border-radius: 12px !important;
+  min-width: 220px;
+  box-shadow: var(--SHADOW-LG) !important;
+}
+
+.menuItem {
+  padding: 10px 16px !important;
+  gap: 4px;
+}
+
+.dialogPaper {
+  border-radius: 16px !important;
+}
+
+.dialogContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px !important;
+}
+
+.dialogField {
+  margin-top: 4px !important;
+}
+
+.modelRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.modelRow:hover {
+  background-color: var(--BACKGROUND-HOVER);
+}
+
+.modelRowActive {
+  background-color: rgba(66, 133, 244, 0.08);
+}
+
+.modelInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.modelName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500 !important;
+  color: var(--TEXT-PRIMARY);
+}
+
+.modelUrl {
+  color: var(--TEXT-DISABLED) !important;
+  display: block;
+  max-width: 100%;
+}
+
+.defaultBadge {
+  height: 20px !important;
+  font-size: 0.65rem !important;
+  background-color: var(--BACKGROUND-HOVER) !important;
+  color: var(--TEXT-SECONDARY) !important;
+}
+
+.checkIcon {
+  color: var(--GOOGLE-BLUE) !important;
+  flex-shrink: 0;
+}
+
+.modelDivider {
+  margin: 4px 0 !important;
+}
+
+.emptyHint {
+  color: var(--TEXT-DISABLED);
+  text-align: center;
+  padding: 16px 0;
+}

@@ -10,14 +10,17 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { APP_NAME } from '@/constants';
 import styles from '@/styles/content.module.css';
 
 const RAG_RESULTS = [
-  { metric: 'LLMContextRecall', baseline: '0.78', description: 'Relevant context retrieved' },
-  { metric: 'Faithfulness', baseline: '0.85', description: 'Response grounded in context' },
-  { metric: 'FactualCorrectness', baseline: '0.82', description: 'Facts are accurate' },
-  { metric: 'ResponseRelevancy', baseline: '0.88', description: 'Response addresses the question' },
-  { metric: 'ContextEntityRecall', baseline: '0.71', description: 'Key entities in retrieved docs' },
+  { metric: 'LLMContextRecall', baseline: '0.55', description: 'Relevant context retrieved' },
+  { metric: 'LLMContextPrecision', baseline: '0.85', description: 'Retrieved context is precise and relevant' },
+  { metric: 'Faithfulness', baseline: '0.55', description: 'Response grounded in context' },
+  { metric: 'FactualCorrectness', baseline: '1.00', description: 'Facts are accurate' },
+  { metric: 'ResponseRelevancy', baseline: '0.79', description: 'Response addresses the question' },
+  { metric: 'ContextEntityRecall', baseline: '0.37', description: 'Key entities in retrieved docs' },
+  { metric: 'NoiseSensitivity', baseline: '0.00', description: 'Robustness to irrelevant context' },
 ];
 
 const AGENT_RESULTS = [
@@ -30,7 +33,7 @@ export default function DashboardPage() {
   return (
     <>
       <Head>
-        <title>Evals Dashboard | Dysprosium Financial Planner</title>
+        <title>{`Evals Dashboard | ${APP_NAME}`}</title>
       </Head>
       <Box className={styles.page}>
         <Typography variant="h4" className={styles.pageTitle}>
@@ -104,17 +107,21 @@ export default function DashboardPage() {
             Conclusions
           </Typography>
           <Typography className={styles.body}>
-            The baseline results show strong performance in response relevancy (0.88) and
-            faithfulness (0.85), indicating the RAG pipeline retrieves relevant context and
-            the LLM stays grounded. Context entity recall (0.71) is the weakest metric,
-            suggesting some domain-specific entities are not well-captured by the current
-            chunking strategy. Agent tool call accuracy is high (0.90), confirming the
+            The baseline results on 5,087 chunks across 9 documents show perfect factual correctness
+            (1.00) and strong context precision (0.85). Context recall (0.55) and faithfulness (0.55)
+            reveal room for improvement &mdash; the harder multi-hop and diagnostic questions pull down
+            these averages because relevant information is spread across multiple chunks. Context entity
+            recall (0.37) is a weaker metric, reflecting the challenge of surfacing all domain-specific
+            entities from a large corpus. Noise sensitivity is 0.00, indicating the baseline is fully
+            robust against irrelevant context. Agent tool call accuracy is high (0.90), confirming the
             playbook-driven approach effectively guides tool selection.
           </Typography>
           <Typography className={styles.body}>
-            Areas for improvement: increasing chunk overlap or switching to semantic chunking
-            could improve entity recall. Adding few-shot examples to agent playbooks may
-            further improve tool call accuracy for edge cases.
+            The test set includes both easy definitional questions (samples 1&ndash;10) and harder
+            diagnostic/multi-step questions (samples 11&ndash;20), giving a realistic picture of
+            production performance. The hybrid retrieval experiment (see Improvements) tests whether
+            improved BM25 with NLTK tokenization, score thresholding, and asymmetric RRF weighting
+            can improve retrieval on the harder questions.
           </Typography>
         </Paper>
 

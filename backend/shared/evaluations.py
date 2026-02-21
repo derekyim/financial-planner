@@ -4,6 +4,7 @@ Implements both RAG evaluation and Agent evaluation metrics using the RAGAS libr
 
 RAG Metrics:
 - LLMContextRecall: Did we retrieve relevant context?
+- LLMContextPrecisionWithReference: Is the retrieved context precise (not noisy)?
 - Faithfulness: Is the response grounded in context?
 - FactualCorrectness: Are facts accurate?
 - ResponseRelevancy: Does response address the question?
@@ -25,6 +26,7 @@ from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.metrics import (
     LLMContextRecall,
+    LLMContextPrecisionWithReference,
     Faithfulness,
     FactualCorrectness,
     ResponseRelevancy,
@@ -52,6 +54,7 @@ DEFAULT_TIMEOUT = 360
 class RAGEvaluationResult:
     """Results from RAG evaluation."""
     context_recall: float
+    context_precision: float
     faithfulness: float
     factual_correctness: float
     response_relevancy: float
@@ -60,6 +63,7 @@ class RAGEvaluationResult:
     def __str__(self) -> str:
         return f"""RAG Evaluation Results:
   Context Recall:        {self.context_recall:.3f}
+  Context Precision:     {self.context_precision:.3f}
   Faithfulness:          {self.faithfulness:.3f}
   Factual Correctness:   {self.factual_correctness:.3f}
   Response Relevancy:    {self.response_relevancy:.3f}
@@ -115,6 +119,7 @@ class RAGASEvaluator:
     def _init_rag_metrics(self):
         """Initialize RAG evaluation metrics."""
         self.context_recall = LLMContextRecall()
+        self.context_precision = LLMContextPrecisionWithReference()
         self.faithfulness = Faithfulness()
         self.factual_correctness = FactualCorrectness()
         self.response_relevancy = ResponseRelevancy()
@@ -122,6 +127,7 @@ class RAGASEvaluator:
         
         self.rag_metrics = [
             self.context_recall,
+            self.context_precision,
             self.faithfulness,
             self.factual_correctness,
             self.response_relevancy,

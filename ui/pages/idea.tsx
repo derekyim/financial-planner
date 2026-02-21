@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Chip from '@mui/material/Chip';
+import { APP_NAME, PROJECT_NAME, PROJECT_SUBTITLE } from '@/constants';
 import styles from '@/styles/content.module.css';
 
 const SUB_AGENTS = [
@@ -19,22 +20,22 @@ export default function IdeaPage() {
   return (
     <>
       <Head>
-        <title>Project Idea | Dysprosium Financial Planner</title>
+        <title>{`Project Idea | ${APP_NAME}`}</title>
       </Head>
       <Box className={styles.page}>
         <Typography variant="h4" className={styles.pageTitle}>
           Project Idea
         </Typography>
         <Typography variant="subtitle1" className={styles.pageSubtitle}>
-          AI-Powered Financial Planning &amp; Analysis for Ecommerce Businesses
+          {PROJECT_SUBTITLE}
         </Typography>
 
         <Paper className={styles.card} elevation={0}>
           <Typography variant="h6" className={styles.sectionTitle}>
-            Powdered Drink City &mdash; Financial Model AI Agent
+            {PROJECT_NAME} &mdash; Financial Model AI Agent
           </Typography>
           <Typography className={styles.body}>
-            Powdered Drink City is a direct-to-consumer ecommerce brand selling powdered drink mixes
+            {PROJECT_NAME} is a direct-to-consumer ecommerce brand selling powdered drink mixes
             across Shopify, Amazon, and wholesale channels. Like most emerging CPG brands, the business
             relies on a complex Google Sheets financial model to plan ad spend, forecast revenue,
             manage cash flow, and optimize for profitability.

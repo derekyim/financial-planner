@@ -8,12 +8,17 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import { APP_NAME } from '@/constants';
 import styles from '@/styles/content.module.css';
 
 const EVAL_PAIRS = [
   {
+    input: 'What is the Cash Conversion Cycle, how do you calculate it?',
+    expectedOutput: 'Gives the formula for Cash Conversion Cycle by searching the web (Tavily)',
+  },
+  {
     input: 'What is EBITDA and how is it calculated in this model?',
-    expectedOutput: 'Explains EBITDA = EBIT + Depreciation + Amortization, references M - Monthly row 194.',
+    expectedOutput: 'Explains EBITDA = EBIT + Depreciation + Amortization, references operations row 194.',
   },
   {
     input: 'What are the Key Drivers for this business?',
@@ -41,7 +46,7 @@ const EVAL_PAIRS = [
   },
   {
     input: 'What is my current cash position and forecast?',
-    expectedOutput: 'Reads cash row from M - Monthly, returns current Actual and Forecast values.',
+    expectedOutput: 'Reads cash row from operations, returns current Actual and Forecast values.',
   },
 ];
 
@@ -49,7 +54,7 @@ export default function ChallengePage() {
   return (
     <>
       <Head>
-        <title>Challenge | Dysprosium Financial Planner</title>
+        <title>{`Challenge | ${APP_NAME}`}</title>
       </Head>
       <Box className={styles.page}>
         <Typography variant="h4" className={styles.pageTitle}>
@@ -65,9 +70,9 @@ export default function ChallengePage() {
           </Typography>
           <Box className={styles.infoBox}>
             <Typography variant="body1" sx={{ fontWeight: 500, color: 'var(--TEXT-PRIMARY)' }}>
-              Ecommerce FP&amp;A teams spend hours manually navigating complex, multi-tab financial models
+              Ecommerce FP&amp;A teams spend days manually navigating complex, multi-tab financial models
               in Google Sheets to answer strategic business questions, trace formula dependencies,
-              and run scenario analyses &mdash; work that is tedious, error-prone, and impossible to
+              and run scenario analyses &mdash; work that is tedious, error-prone, and hard to
               scale across multiple brands or models.
             </Typography>
           </Box>
@@ -79,7 +84,7 @@ export default function ChallengePage() {
           </Typography>
           <Typography className={styles.body}>
             The primary user is an <strong>FP&amp;A Analyst or CFO</strong> at a mid-market ecommerce
-            company (typically $5M&ndash;$100M revenue) who manages financial planning across
+            company (typically $5M&ndash;$500M revenue) who manages financial planning across
             direct-to-consumer (Shopify), marketplace (Amazon), and wholesale channels.
           </Typography>
           <Typography className={styles.body}>

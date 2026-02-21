@@ -8,14 +8,15 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import { APP_NAME, EMBEDDING_MODEL, EMBEDDING_DIMS, CHUNK_SIZE, CHUNK_OVERLAP, RETRIEVAL_K, SUPERVISOR_MODEL, AGENT_MODEL } from '@/constants';
 import styles from '@/styles/content.module.css';
 
 const TOOLING_CHOICES = [
-  { component: 'LLM (Supervisor)', choice: 'GPT-4o', reason: 'Best reasoning for complex routing decisions and structured output.' },
-  { component: 'LLM (Agents)', choice: 'GPT-4o-mini', reason: 'Cost-effective for tool-calling agents that follow structured playbooks.' },
+  { component: 'LLM (Supervisor)', choice: SUPERVISOR_MODEL, reason: 'Best reasoning for complex routing decisions and structured output.' },
+  { component: 'LLM (Agents)', choice: AGENT_MODEL, reason: 'Cost-effective for tool-calling agents that follow structured playbooks.' },
   { component: 'Agent Orchestration', choice: 'LangGraph', reason: 'Native support for cyclic tool-calling loops, checkpointing, and memory stores.' },
   { component: 'Tools', choice: 'Google Sheets API (gspread)', reason: 'Direct programmatic access to read/write cells, formulas, and ranges.' },
-  { component: 'Embedding Model', choice: 'text-embedding-3-small', reason: 'Production OpenAI embedding model; 1536 dims, good cost/quality tradeoff.' },
+  { component: 'Embedding Model', choice: EMBEDDING_MODEL, reason: `Production OpenAI embedding model; ${EMBEDDING_DIMS} dims, good cost/quality tradeoff.` },
   { component: 'Vector Database', choice: 'Qdrant (in-memory)', reason: 'Lightweight, no infrastructure needed; easy to swap to hosted Qdrant later.' },
   { component: 'Monitoring', choice: 'LangSmith', reason: 'First-party LangGraph tracing; shows full agent execution traces and tool calls.' },
   { component: 'Evaluation', choice: 'RAGAS', reason: 'Standard framework for RAG evaluation with faithfulness, recall, and relevancy metrics.' },
@@ -28,7 +29,7 @@ export default function SolutionPage() {
   return (
     <>
       <Head>
-        <title>Solution | Dysprosium Financial Planner</title>
+        <title>{`Solution | ${APP_NAME}`}</title>
       </Head>
       <Box className={styles.page}>
         <Typography variant="h4" className={styles.pageTitle}>
@@ -96,17 +97,19 @@ export default function SolutionPage() {
             <strong>RAG components:</strong> The Strategic Guidance sub-agent uses a Qdrant vector store
             loaded with business knowledge documents (financial glossaries, Amazon/Shopify strategies,
             advertising playbooks, warehouse optimization guides). Documents are chunked with
-            RecursiveCharacterTextSplitter (500 tokens, 50 overlap) and embedded with
-            text-embedding-3-small. On query, the top 5 relevant chunks are retrieved and injected
-            into the agent&apos;s system prompt as grounding context.
+            RecursiveCharacterTextSplitter ({CHUNK_SIZE} chars, {CHUNK_OVERLAP} overlap) and embedded with
+            {EMBEDDING_MODEL}. On query, the top {RETRIEVAL_K} relevant chunks are retrieved and injected
+            into the agent&apos;s system prompt as grounding context. An advanced hybrid retrieval mode
+            (BM25 + dense with Reciprocal Rank Fusion) is available via the <code>ADVANCED_RETRIEVAL</code> flag.
           </Typography>
           <Typography className={styles.body}>
             <strong>Agent components:</strong> The supervisor routes to specialist agents (Recall, Goal Seek,
-            Strategic, What-If, Sensitivity, Forecast) each backed by LangChain tools bound to
-            the LLM. Tool-calling agents can read/write cells, trace formula chains, run sensitivity
-            tables, and log to audit trails. Memory is managed across 5 types: short-term (conversation),
-            long-term (cross-session facts), semantic (embedding-indexed), episodic (past interactions),
-            and procedural (agent playbooks).
+            Strategic, with Sensitivity, What-If, and Forecast planned for Demo Day) each backed by
+            LangChain tools bound to the LLM. Tool-calling agents can read/write cells, trace formula
+            chains, run sensitivity tables, and log to audit trails. Memory is managed across 5 types:
+            short-term (conversation via LangGraph checkpointer), long-term (cross-session facts in
+            InMemoryStore), semantic (embedding-indexed knowledge), episodic (timestamped past
+            interactions), and procedural (agent playbooks).
           </Typography>
         </Paper>
       </Box>

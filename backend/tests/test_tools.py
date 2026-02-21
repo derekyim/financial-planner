@@ -89,11 +89,11 @@ class TestReadCellValue:
         with patch("agents.tools._sheets_client", mock_sheets_client):
             with patch("agents.tools._current_spreadsheet_url", sample_spreadsheet_url):
                 result = read_cell_value.invoke({
-                    "sheet_name": "M - Monthly",
+                    "sheet_name": "operations",
                     "cell_notation": "K194"
                 })
                 
-                assert "M - Monthly!K194" in result
+                assert "operations!K194" in result
                 assert "1228810" in result
 
 
@@ -105,7 +105,7 @@ class TestReadCellFormula:
         with patch("agents.tools._sheets_client", mock_sheets_client):
             with patch("agents.tools._current_spreadsheet_url", sample_spreadsheet_url):
                 result = read_cell_formula.invoke({
-                    "sheet_name": "M - Monthly",
+                    "sheet_name": "operations",
                     "cell_notation": "K194"
                 })
                 
@@ -118,7 +118,7 @@ class TestReadCellFormula:
         with patch("agents.tools._sheets_client", mock_sheets_client):
             with patch("agents.tools._current_spreadsheet_url", sample_spreadsheet_url):
                 result = read_cell_formula.invoke({
-                    "sheet_name": "M - Monthly",
+                    "sheet_name": "operations",
                     "cell_notation": "K5"
                 })
                 
@@ -145,7 +145,7 @@ class TestTraceFormulaChain:
         with patch("agents.tools._sheets_client", mock_sheets_client):
             with patch("agents.tools._current_spreadsheet_url", sample_spreadsheet_url):
                 result = trace_formula_chain.invoke({
-                    "sheet_name": "M - Monthly",
+                    "sheet_name": "operations",
                     "cell_notation": "K194",
                     "max_depth": 2
                 })
@@ -158,7 +158,7 @@ class TestTraceFormulaChain:
         with patch("agents.tools._sheets_client", mock_sheets_client):
             with patch("agents.tools._current_spreadsheet_url", sample_spreadsheet_url):
                 result = trace_formula_chain.invoke({
-                    "sheet_name": "M - Monthly",
+                    "sheet_name": "operations",
                     "cell_notation": "K194",
                     "max_depth": 1
                 })

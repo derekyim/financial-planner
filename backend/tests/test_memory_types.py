@@ -112,7 +112,7 @@ class TestSemanticMemory:
             driver_id="orders",
             name="Orders",
             description="Number of customer orders per period",
-            cell_reference="M - Monthly!K5",
+            cell_reference="operations!K5",
             current_value="221207"
         )
         
@@ -127,7 +127,7 @@ class TestSemanticMemory:
             result_id="gross_sales",
             name="Gross Sales",
             description="Total revenue before deductions",
-            cell_reference="M - Monthly!K92",
+            cell_reference="operations!K92",
             formula="=K80*K81",
             current_value="21346139"
         )

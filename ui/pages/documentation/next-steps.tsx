@@ -2,20 +2,21 @@ import Head from 'next/head';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
+import { APP_NAME, EMBEDDING_MODEL } from '@/constants';
 import styles from '@/styles/content.module.css';
 
 export default function NextStepsPage() {
   return (
     <>
       <Head>
-        <title>Next Steps | Dysprosium Financial Planner</title>
+        <title>{`Next Steps | ${APP_NAME}`}</title>
       </Head>
       <Box className={styles.page}>
         <Typography variant="h4" className={styles.pageTitle}>
           Next Steps
         </Typography>
         <Typography variant="subtitle1" className={styles.pageSubtitle}>
-          Task 7: Roadmap to Demo Day
+          Task 7: Roadmap to Future improvements to the application.
         </Typography>
 
         <Paper className={styles.card} elevation={0}>
@@ -24,7 +25,7 @@ export default function NextStepsPage() {
           </Typography>
           <Typography className={styles.body}>
             <strong>Yes, with enhancements.</strong> The current dense vector retrieval with
-            text-embedding-3-small and Qdrant provides a strong baseline for our business knowledge
+            {EMBEDDING_MODEL} and Qdrant provides a strong baseline for our business knowledge
             use case. The documents are domain-specific and well-structured, so dense embeddings
             capture semantic similarity effectively. However, for Demo Day we plan to add a
             hybrid retrieval layer that combines dense vectors with BM25 sparse retrieval to handle
@@ -35,7 +36,7 @@ export default function NextStepsPage() {
 
         <Paper className={styles.card} elevation={0}>
           <Typography variant="h6" className={styles.sectionTitle}>
-            Demo Day Roadmap
+            Future Roadmap
           </Typography>
           <ul className={styles.list}>
             <li className={styles.listItem}>
@@ -85,7 +86,7 @@ export default function NextStepsPage() {
             and edges to the graph, and (4) updating the supervisor&apos;s routing logic.
           </Typography>
           <Typography className={styles.body}>
-            For Demo Day, the biggest structural change will be moving from Vercel serverless
+            For Future improvements, the biggest structural change will be moving from Vercel serverless
             functions (which have execution time limits) to a dedicated backend service for
             long-running goal-seek optimizations that may take 30+ seconds.
           </Typography>

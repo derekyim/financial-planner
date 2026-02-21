@@ -99,7 +99,7 @@ class TestGoalSeekAgentToolUsage:
             {
                 "name": "write_cell_value",
                 "args": {
-                    "sheet_name": "M - Monthly",
+                    "sheet_name": "operations",
                     "cell_notation": "BT5",
                     "value": "250000"
                 },

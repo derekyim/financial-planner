@@ -170,7 +170,7 @@ class SemanticMemory:
             driver_id: Unique identifier for the driver.
             name: Friendly name of the driver.
             description: Description of what this driver controls.
-            cell_reference: Cell reference (e.g., "M - Monthly!K5").
+            cell_reference: Cell reference (e.g., "operations!K5").
             current_value: Current value if known.
         """
         text = f"Key Driver: {name}. {description}"
@@ -197,7 +197,7 @@ class SemanticMemory:
             result_id: Unique identifier for the result.
             name: Friendly name of the result.
             description: Description of what this result measures.
-            cell_reference: Cell reference (e.g., "M - Monthly!K92").
+            cell_reference: Cell reference (e.g., "operations!K92").
             formula: The formula used to calculate this result.
             current_value: Current value if known.
         """
