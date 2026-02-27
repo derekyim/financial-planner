@@ -288,24 +288,14 @@ Additional roadmap items for Demo Day:
 - Move from in-memory Qdrant to hosted Qdrant Cloud for persistence
 - Complete implementation of Sensitivity Analysis, What-If, and Forecast Projection agents
 - Fix up the dataset to be more focused to help BM25
+- Deploy to Vercel
 
 ---
 
 ## Loom Video
 
-**URL:** _TODO: Insert Loom URL here_
+**URL:** https://www.loom.com/share/00cf750e7ea04ff296f8e76f4a6e2d8b
 
-### Suggested 5-Minute Script
-
-| Time | Content |
-|------|---------|
-| 0:00–0:30 | Problem statement and audience — FP&A analysts spending hours in spreadsheets |
-| 0:30–1:00 | Show the Architecture page in the UI |
-| 1:00–2:00 | Demo: Ask a recall question ("What is my EBITDA?"), show agent routing in debug pane |
-| 2:00–3:00 | Demo: Ask a strategic RAG question ("How to optimize Amazon ad spend?"), show retrieved context |
-| 3:00–4:00 | Demo: Ask a goal-seek question ("Increase EBITDA by 10% while keeping cash above $1M") |
-| 4:00–4:30 | Show the Evals Dashboard and Improvements pages with RAGAS results |
-| 4:30–5:00 | Next steps and thank you |
 
 ---
 
@@ -333,8 +323,6 @@ Additional roadmap items for Demo Day:
 | All relevant code | 0 | Public GitHub repo | -- |
 
 
-# Certification Challenge LOOM video
-https://www.loom.com/share/00cf750e7ea04ff296f8e76f4a6e2d8b
 
 
 # LangSmith Experiments Screenshot

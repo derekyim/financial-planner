@@ -2,7 +2,10 @@
 uv.lock
 ui/node_modules/
 ui/.next/
+project_build_notes.md
 
+docs/*
+backend/docs/*
 
 # Backend secrets
 backend/.env
