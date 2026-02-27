@@ -382,7 +382,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r ../requirements.txt
-python -m api.index
+uvicorn api.index:app --reload --port 8000
 ```
 
 The API server starts at `http://localhost:8000`.

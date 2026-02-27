@@ -1,4 +1,4 @@
-import type { Step, CallBackProps, STATUS_EVENTS } from 'react-joyride';
+import type { Step, CallBackProps } from 'react-joyride';
 import { APP_NAME, TOUR_STORAGE_KEY } from '@/constants';
 
 const STORAGE_KEY = TOUR_STORAGE_KEY;
