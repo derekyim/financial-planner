@@ -2,7 +2,7 @@
 
 **Project:** Dysprosium Financial Assistant — AI-Powered Financial Planning & Analysis for Ecommerce  
 **Repo:** [financial-planner-repo](https://github.com/)  
-**Loom Video:** _TODO: Insert Loom URL here_
+**Loom Video:** https://www.loom.com/share/00cf750e7ea04ff296f8e76f4a6e2d8b
 
 ---
 
@@ -292,12 +292,6 @@ Additional roadmap items for Demo Day:
 
 ---
 
-## Loom Video
-
-**URL:** https://www.loom.com/share/00cf750e7ea04ff296f8e76f4a6e2d8b
-
-
----
 
 ## Deliverable Index
 
@@ -318,8 +312,8 @@ Additional roadmap items for Demo Day:
 | Implement advanced retrieval | 10 | `backend/agents/rag_pipeline.py` | Hybrid BM25+Dense+RRF |
 | Before/after comparison | 2 | `ui/pages/evals/improvements.tsx`, this doc Task 6 | Before/After table |
 | Dense vector for Demo Day? | 2 | `ui/pages/documentation/next-steps.tsx`, this doc Task 7 | Next Steps |
-| Loom video | 10 | _TODO_ | Loom Video section |
-| Written document | 10 | This file (`certification_challenge_documentation.md`) | All sections |
+| Loom video | 10 | **URL:** https://www.loom.com/share/00cf750e7ea04ff296f8e76f4a6e2d8b | Loom Video section |
+| Written document | 10 | This file (`README.md`) | All sections |
 | All relevant code | 0 | Public GitHub repo | -- |
 
 
