@@ -6,7 +6,8 @@ project_build_notes.md
 
 docs/*
 backend/docs/*
-
+deploying.md
+.env
 # Backend secrets
 backend/.env
 backend/credentials.json

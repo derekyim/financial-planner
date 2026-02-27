@@ -30,12 +30,23 @@ class TeeStream:
 from shared.config import load_env
 load_env()
 
+import base64
+import os
+import tempfile
+
+creds_b64 = os.getenv("GOOGLE_CREDENTIALS_B64")
+if creds_b64:
+    creds_json = base64.b64decode(creds_b64)
+    creds_file = os.path.join(tempfile.gettempdir(), "credentials.json")
+    with open(creds_file, "wb") as f:
+        f.write(creds_json)
+    os.environ["GOOGLE_CREDENTIALS_PATH"] = creds_file
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
-import os
 import traceback
 
 app = FastAPI()
