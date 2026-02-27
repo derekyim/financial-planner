@@ -22,7 +22,7 @@ pytestmark = pytest.mark.integration
 
 
 # Test configuration
-TEST_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1yopikoACz8oY32Zv9FrGhb64_PlDwcO1e02WePBr4uM/edit"
+TEST_SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "")
 TEST_SHEET_NAME = "operations"
 
 
@@ -80,13 +80,7 @@ class TestSheetsUtilitiesRead:
 
 class TestSheetsUtilitiesURLParsing:
     """Tests for URL parsing functionality."""
-    
-    def test_extract_spreadsheet_id_valid_url(self, sheets_client: SheetsUtilities):
-        """Verify spreadsheet ID extraction from a valid URL."""
-        url = "https://docs.google.com/spreadsheets/d/1yopikoACz8oY32Zv9FrGhb64_PlDwcO1e02WePBr4uM/edit?gid=123"
-        spreadsheet_id = sheets_client._extract_spreadsheet_id(url)
-        assert spreadsheet_id == "1yopikoACz8oY32Zv9FrGhb64_PlDwcO1e02WePBr4uM"
-    
+     
     def test_extract_spreadsheet_id_invalid_url(self, sheets_client: SheetsUtilities):
         """Verify that invalid URLs raise ValueError."""
         with pytest.raises(ValueError):

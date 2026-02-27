@@ -24,5 +24,5 @@ export type SavedModel = {
 
 export const DEFAULT_MODEL: SavedModel = {
   name: 'Powdered Drink City',
-  url: 'https://docs.google.com/spreadsheets/d/1yopikoACz8oY32Zv9FrGhb64_PlDwcO1e02WePBr4uM',
+  url: process.env.NEXT_PUBLIC_SPREADSHEET_URL || '',
 };

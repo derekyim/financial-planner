@@ -59,10 +59,7 @@ def _ensure_agent():
     from agents.financial_agent import setup_agent
 
     creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json")
-    spreadsheet_url = os.getenv(
-        "SPREADSHEET_URL",
-        "https://docs.google.com/spreadsheets/d/1yopikoACz8oY32Zv9FrGhb64_PlDwcO1e02WePBr4uM/edit",
-    )
+    spreadsheet_url = os.getenv("SPREADSHEET_URL", "")
 
     if not Path(creds_path).is_absolute():
         creds_path = str(Path(_backend_dir) / creds_path)

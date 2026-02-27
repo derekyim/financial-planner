@@ -635,10 +635,7 @@ if __name__ == "__main__":
 
     # Get credentials path
     creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json")
-    spreadsheet_url = os.getenv(
-        "SPREADSHEET_URL",
-        "https://docs.google.com/spreadsheets/d/1yopikoACz8oY32Zv9FrGhb64_PlDwcO1e02WePBr4uM/edit"
-    )
+    spreadsheet_url = os.getenv("SPREADSHEET_URL", "")
 
     print("Financial Analysis Agent")
     print("=" * 50)
