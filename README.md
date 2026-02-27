@@ -3,6 +3,7 @@
 **Project:** Dysprosium Financial Assistant — AI-Powered Financial Planning & Analysis for Ecommerce  
 **Repo:** [financial-planner-repo](https://github.com/)  
 **Loom Video:** https://www.loom.com/share/00cf750e7ea04ff296f8e76f4a6e2d8b
+**PUBLIC URL:** https://financial-planner-wine-eight.vercel.app/ 
 
 ---
 
