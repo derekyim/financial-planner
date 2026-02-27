@@ -1,0 +1,7 @@
+-r requirements.txt
+ragas>=0.2.0
+cohere>=5.0.0
+langchain-cohere>=0.3.0
+beautifulsoup4>=4.12.0
+html2text>=2024.2.26
+requests>=2.31.0

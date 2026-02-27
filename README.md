@@ -381,7 +381,7 @@ ADVANCED_RETRIEVAL=false           # set to true for hybrid BM25+dense retrieval
 cd backend
 python -m venv .venv
 source .venv/bin/activate
-pip install -r ../requirements.txt
+pip install -r ../requirements-dev.txt
 uvicorn api.index:app --reload --port 8000
 ```
 
