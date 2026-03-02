@@ -8,6 +8,7 @@ from typing import Any, Optional
 from dataclasses import dataclass
 from langgraph.store.base import BaseStore
 from langchain_core.messages import BaseMessage, trim_messages
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 
 
@@ -38,7 +39,7 @@ class ShortTermMemory:
     def trim(
         self,
         max_tokens: int = 4000,
-        llm: Optional[ChatOpenAI] = None,
+        llm: Optional[BaseChatModel] = None,
         include_system: bool = True,
     ) -> list[BaseMessage]:
         """Trim messages to fit within a token limit.
@@ -127,8 +128,8 @@ class SemanticMemory:
     """Semantic memory stores and retrieves facts by meaning.
 
     For financial analysis, this stores:
-    - Key Drivers and their relationships
-    - Key Results and their formulas
+    - Business Levers and their relationships
+    - Strategic Outcomes and their formulas
     - Formula chains and dependencies
     - Model structure information
     """
@@ -156,7 +157,7 @@ class SemanticMemory:
             value.update(metadata)
         self.store.put(self.namespace, key, value)
 
-    def store_key_driver(
+    def store_business_lever(
         self,
         driver_id: str,
         name: str,
@@ -164,25 +165,25 @@ class SemanticMemory:
         cell_reference: str,
         current_value: Optional[str] = None,
     ) -> None:
-        """Store a Key Driver in semantic memory.
+        """Store a Business Lever in semantic memory.
 
         Args:
             driver_id: Unique identifier for the driver.
             name: Friendly name of the driver.
             description: Description of what this driver controls.
-            cell_reference: Cell reference (e.g., "operations!K5").
+            cell_reference: Cell reference (e.g., "operations!G5").
             current_value: Current value if known.
         """
-        text = f"Key Driver: {name}. {description}"
+        text = f"Business Lever: {name}. {description}"
         metadata = {
-            "type": "key_driver",
+            "type": "business_lever",
             "name": name,
             "cell_reference": cell_reference,
             "current_value": current_value,
         }
         self.store_fact(driver_id, text, metadata)
 
-    def store_key_result(
+    def store_strategic_outcome(
         self,
         result_id: str,
         name: str,
@@ -191,19 +192,19 @@ class SemanticMemory:
         formula: Optional[str] = None,
         current_value: Optional[str] = None,
     ) -> None:
-        """Store a Key Result in semantic memory.
+        """Store a Strategic Outcome in semantic memory.
 
         Args:
             result_id: Unique identifier for the result.
             name: Friendly name of the result.
             description: Description of what this result measures.
-            cell_reference: Cell reference (e.g., "operations!K92").
+            cell_reference: Cell reference (e.g., "operations!G92").
             formula: The formula used to calculate this result.
             current_value: Current value if known.
         """
-        text = f"Key Result: {name}. {description}"
+        text = f"Strategic Outcome: {name}. {description}"
         metadata = {
-            "type": "key_result",
+            "type": "strategic_outcome",
             "name": name,
             "cell_reference": cell_reference,
             "formula": formula,
@@ -255,23 +256,23 @@ class SemanticMemory:
             for r in results
         ]
 
-    def get_all_key_drivers(self) -> list[dict[str, Any]]:
-        """Get all stored Key Drivers.
+    def get_all_business_levers(self) -> list[dict[str, Any]]:
+        """Get all stored Business Levers.
 
         Returns:
-            List of all Key Driver facts.
+            List of all Business Lever facts.
         """
-        results = self.search("Key Driver", limit=50)
-        return [r for r in results if r.get("type") == "key_driver"]
+        results = self.search("Business Lever", limit=50)
+        return [r for r in results if r.get("type") == "business_lever"]
 
-    def get_all_key_results(self) -> list[dict[str, Any]]:
-        """Get all stored Key Results.
+    def get_all_strategic_outcomes(self) -> list[dict[str, Any]]:
+        """Get all stored Strategic Outcomes.
 
         Returns:
-            List of all Key Result facts.
+            List of all Strategic Outcome facts.
         """
-        results = self.search("Key Result", limit=50)
-        return [r for r in results if r.get("type") == "key_result"]
+        results = self.search("Strategic Outcome", limit=50)
+        return [r for r in results if r.get("type") == "strategic_outcome"]
 
 
 class EpisodicMemory:
@@ -336,7 +337,7 @@ class EpisodicMemory:
             key: Unique identifier for the solution.
             goals: List of goals that were satisfied.
             solution: The solution details.
-            driver_values: The Key Driver values that achieved the goals.
+            driver_values: The Business Lever values that achieved the goals.
         """
         goals_text = ", ".join([f"{g['metric']}={g['target']}" for g in goals])
         situation = f"Goal Seek: Achieved targets {goals_text}"
@@ -412,8 +413,8 @@ class ProceduralMemory:
 
 PLAYBOOK:
 1. Parse the user's question to identify which metric(s) they're asking about
-2. Search semantic memory for relevant Key Drivers or Key Results
-3. If not found in memory, read from the "Key Drivers and Results" tab
+2. Search semantic memory for relevant Business Levers or Strategic Outcomes
+3. If not found in memory, read from the "Business Levers and Strategic Outcomes" tab
 4. For each metric, trace the formula chain to understand how it's calculated
 5. Explain the metric with cell references and formula logic
 6. Write the action to the AuditLog tab
@@ -424,8 +425,8 @@ Always cite specific cell references and formulas in your explanations.""",
 
 PLAYBOOK:
 1. Parse the user's goals: extract up to 3 targets with (metric_name, end_date, target_value)
-2. Identify which Key Drivers can influence each target metric
-3. For each Key Driver, understand its formula impact on the targets
+2. Identify which Business Levers can influence each target metric
+3. For each Business Lever, understand its formula impact on the targets
 4. Generate test scenarios using Latin hypercube sampling across driver ranges
 5. For each scenario: write driver values to cells, read resulting target values
 6. Identify top 3 combinations that satisfy all constraints
@@ -438,8 +439,8 @@ Be careful to restore original values even if errors occur.""",
         "sensitivity_analysis": """You are a Sensitivity Analysis agent for financial modeling.
 
 PLAYBOOK:
-1. Identify the input variables (Key Drivers) to vary
-2. Identify the output variable (Key Result) to monitor
+1. Identify the input variables (Business Levers) to vary
+2. Identify the output variable (Strategic Outcome) to monitor
 3. Define the range of variation (e.g., +/- 25% in 5% increments)
 4. Generate multipliers for each combination
 5. Run each scenario and capture results
@@ -451,9 +452,9 @@ PLAYBOOK:
 
 PLAYBOOK:
 1. Parse the user's hypothetical scenario
-2. Identify which Key Drivers need to change
+2. Identify which Business Levers need to change
 3. Calculate the new values based on the scenario
-4. Trace formulas to predict impact on Key Results
+4. Trace formulas to predict impact on Strategic Outcomes
 5. Explain the cascading effects through the model
 6. Write the analysis to the AuditLog tab
 
@@ -538,7 +539,7 @@ PLAYBOOK:
         self,
         playbook_name: str,
         feedback: str,
-        llm: Optional[ChatOpenAI] = None,
+        llm: Optional[BaseChatModel] = None,
     ) -> tuple[str, int]:
         """Reflect on feedback and update playbook instructions.
 

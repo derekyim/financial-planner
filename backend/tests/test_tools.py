@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agents.tools import (
     read_model_documentation,
-    read_key_drivers_and_results,
+    read_business_levers_and_outcomes,
     read_cell_value,
     read_cell_formula,
     trace_formula_chain,
@@ -66,14 +66,14 @@ class TestReadModelDocumentation:
                 assert "Error reading Model Documentation" in result
 
 
-class TestReadKeyDriversAndResults:
-    """Tests for read_key_drivers_and_results tool."""
+class TestReadBusinessLeversAndOutcomes:
+    """Tests for read_business_levers_and_outcomes tool."""
 
     def test_reads_key_metrics(self, mock_sheets_client, sample_spreadsheet_url):
-        """Test that Key Drivers and Results are read correctly."""
+        """Test that Business Levers and Strategic Outcomes are read correctly."""
         with patch("agents.tools._sheets_client", mock_sheets_client):
             with patch("agents.tools._current_spreadsheet_url", sample_spreadsheet_url):
-                result = read_key_drivers_and_results.invoke({})
+                result = read_business_levers_and_outcomes.invoke({})
                 
                 assert "Orders" in result
                 assert "AoV" in result

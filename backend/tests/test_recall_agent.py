@@ -53,11 +53,11 @@ class TestRecallAgentNode:
         recall_node = create_recall_agent_node(mock_llm)
         
         state: FinancialAgentState = {
-            "messages": [HumanMessage(content="What are the Key Drivers?")],
+            "messages": [HumanMessage(content="What are the Business Levers?")],
             "user_id": "test_user",
             "model_url": "https://example.com/sheet",
             "next": "",
-            "model_documentation": "Key Drivers: Orders, AoV, CaC",
+            "model_documentation": "Business Levers: Orders, AoV, CaC",
         }
         
         recall_node(state)
@@ -69,7 +69,7 @@ class TestRecallAgentNode:
         # First message should be system message with docs
         assert len(call_args) >= 2
         system_msg = call_args[0]
-        assert "Key Drivers" in system_msg.content or "Recall" in system_msg.content
+        assert "Business Levers" in system_msg.content or "Recall" in system_msg.content
 
 
 class TestRecallAgentResponses:

@@ -78,6 +78,8 @@ def _ensure_agent():
     setup_agent(
         credentials_path=creds_path,
         spreadsheet_url=spreadsheet_url,
+        supervisor_model="claude-sonnet-4-5-20250929",
+        agent_model="claude-sonnet-4-5-20250929"
     )
     _agent_initialized = True
 
@@ -126,6 +128,7 @@ def chat_stream_endpoint(request: ChatRequest):
             _ensure_agent()
             from agents.financial_agent import chat_stream
 
+            #TODO: add better thinking streamer here.
             yield _sse_event("thinking", {
                 "text": f"Let me look into that for you. Analyzing your question: \"{request.message}\""
             })

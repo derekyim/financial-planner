@@ -92,7 +92,7 @@ class TestGoalSeekAgentToolUsage:
         response = AIMessage(content="")
         response.tool_calls = [
             {
-                "name": "read_key_drivers_and_results",
+                "name": "read_business_levers_and_outcomes",
                 "args": {},
                 "id": "call_1"
             },

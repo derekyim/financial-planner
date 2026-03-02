@@ -15,7 +15,8 @@ from typing_extensions import TypedDict
 
 warnings.filterwarnings("ignore", message="Pydantic serializer warnings")
 
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
@@ -50,6 +51,7 @@ from agents.playbooks import (
     STRATEGIC_GUIDANCE_PROMPT,
 )
 from agents.rag_pipeline import retrieve_context
+from agents.llm_factory import create_llm
 
 
 # -----------------------------------------------------------------------------
@@ -122,7 +124,7 @@ def initialize_memory_store(store: BaseStore) -> None:
 # Supervisor/Planner Node
 # -----------------------------------------------------------------------------
 
-def create_supervisor_node(llm: ChatOpenAI):
+def create_supervisor_node(llm: BaseChatModel):
     """Create the supervisor node that routes to specialist agents.
 
     Args:
@@ -143,7 +145,7 @@ Based on this question, which specialist should handle it?
 - 'strategic': For business strategy advice, industry best practices, how to improve operations
 - 'respond': If you can answer directly without specialist help
 
-Respond with the specialist name and your reasoning."""),
+DO NOT RESPOND WITH ANYTHING OTHER THAN THE SPECIALIST NAME AND YOUR REASONING."""),
     ])
 
     routing_llm = llm.with_structured_output(RouterOutput)
@@ -201,7 +203,7 @@ def model_doc_reader_node(state: FinancialAgentState) -> dict:
 # Information Recall Agent Node
 # -----------------------------------------------------------------------------
 
-def create_recall_agent_node(llm: ChatOpenAI):
+def create_recall_agent_node(llm: BaseChatModel):
     """Create the Information Recall agent node.
 
     Args:
@@ -240,7 +242,7 @@ def create_recall_agent_node(llm: ChatOpenAI):
 # Goal Seek Agent Node
 # -----------------------------------------------------------------------------
 
-def create_goal_seek_agent_node(llm: ChatOpenAI):
+def create_goal_seek_agent_node(llm: BaseChatModel):
     """Create the Goal Seek agent node.
 
     Args:
@@ -279,7 +281,7 @@ def create_goal_seek_agent_node(llm: ChatOpenAI):
 # Direct Response Node (for simple queries)
 # -----------------------------------------------------------------------------
 
-def create_respond_node(llm: ChatOpenAI):
+def create_respond_node(llm: BaseChatModel):
     """Create a direct response node for simple queries.
 
     Args:
@@ -298,7 +300,9 @@ def create_respond_node(llm: ChatOpenAI):
 ## Model Context
 {model_docs[:2000] if model_docs else "No model documentation loaded yet."}
 
-Answer the user's question helpfully. If they need detailed analysis, suggest they ask about specific metrics."""
+Answer the user's question helpfully. If they need detailed analysis, suggest they ask about specific metrics.
+
+Never include raw tool output, column letters, row numbers, cell references, or pipe-delimited data in your response. Present insights in plain business language."""
 
         messages = [SystemMessage(content=system_content)] + state["messages"]
         response = llm.invoke(messages)
@@ -312,7 +316,7 @@ Answer the user's question helpfully. If they need detailed analysis, suggest th
 # Strategic Guidance Agent Node (RAG-powered)
 # -----------------------------------------------------------------------------
 
-def create_strategic_guidance_node(llm: ChatOpenAI, tools: list):
+def create_strategic_guidance_node(llm: BaseChatModel, tools: list):
     """Create the Strategic Guidance agent node with RAG + web search.
 
     Args:
@@ -352,6 +356,9 @@ def create_strategic_guidance_node(llm: ChatOpenAI, tools: list):
 
 ## IMPORTANT: Today's date is {today}.
 Your training data is outdated. For ANY question about recent events, trends, or current practices, you MUST call the web_search tool FIRST before responding. The tool automatically restricts to the last 90 days. Do not answer from memory when current data is available.
+
+DO NOT RESPOND WITH ANYTHING OTHER THAN THE STRATEGIC GUIDANCE AND YOUR REASONING.
+DO NOT RESPOND WITH IF YOU ARE SEARCHING THE LAST 90 DAYS OF DATA.
 """
 
         messages = [SystemMessage(content=system_content)] + state["messages"]
@@ -405,7 +412,7 @@ def create_financial_agent(
         supervisor_model: Model to use for supervisor (default: gpt-4o).
         agent_model: Model to use for specialist agents (default: gpt-4o-mini).
         tab_names: Optional dict to configure tab names for the spreadsheet.
-            Keys: model_documentation, key_drivers_results, main_monthly, tasks, audit_log
+            Keys: model_documentation, business_levers_outcomes, main_monthly, tasks, audit_log
 
     Returns:
         Compiled LangGraph for the financial agent.
@@ -421,9 +428,9 @@ def create_financial_agent(
     if checkpointer is None:
         checkpointer = MemorySaver()
 
-    # Create LLMs
-    supervisor_llm = ChatOpenAI(model=supervisor_model, temperature=0)
-    agent_llm = ChatOpenAI(model=agent_model, temperature=0)
+    # Create LLMs via factory (resolves provider from model name prefix)
+    supervisor_llm = create_llm(supervisor_model, temperature=0)
+    agent_llm = create_llm(agent_model, temperature=0)
 
     # Create nodes
     supervisor_node = create_supervisor_node(supervisor_llm)
@@ -507,6 +514,22 @@ _agent_instance = None
 _current_config = None
 
 
+def _extract_text(content) -> str:
+    """Normalize message content to a plain string.
+
+    OpenAI returns content as a str, but Anthropic returns a list of
+    content blocks like [{"type": "text", "text": "..."}].
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(
+            block.get("text", "") if isinstance(block, dict) else str(block)
+            for block in content
+        )
+    return str(content) if content else ""
+
+
 def setup_agent(
     credentials_path: str,
     spreadsheet_url: str,
@@ -523,7 +546,7 @@ def setup_agent(
         agent_model: Model to use for specialist agents.
         tab_names: Optional dict to configure tab names. Keys:
             - model_documentation: Tab with model docs
-            - key_drivers_results: Tab with KPIs  
+            - business_levers_outcomes: Tab with KPIs  
             - main_monthly: Main operations tab (default: "operations")
             - tasks: Tasks tab
             - audit_log: Audit log tab
@@ -576,7 +599,7 @@ def chat(
         config,
     )
 
-    return result["messages"][-1].content
+    return _extract_text(result["messages"][-1].content)
 
 
 def chat_stream(
@@ -617,10 +640,13 @@ def chat_stream(
             print(f"\n[{node_name}]")
             if "messages" in values:
                 for msg in values["messages"]:
-                    if hasattr(msg, "content") and msg.content:
-                        yield msg.content
                     if hasattr(msg, "tool_calls") and msg.tool_calls:
                         print(f"  Tool calls: {[tc['name'] for tc in msg.tool_calls]}")
+                        continue
+                    if not isinstance(msg, AIMessage):
+                        continue
+                    if hasattr(msg, "content") and msg.content:
+                        yield _extract_text(msg.content)
 
 
 # -----------------------------------------------------------------------------

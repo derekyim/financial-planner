@@ -1,0 +1,17 @@
+---
+description: Node.js version and shell setup for this project
+alwaysApply: true
+---
+
+# Node.js Version
+
+This project requires **Node.js v20** via nvm.
+
+Before running any npm/node commands in the `ui/` directory, always run:
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 20
+```
+
+- The default nvm alias is v12 which is too old for this project's dependencies.
+- Always prefix shell commands with `source ~/.nvm/nvm.sh && nvm use 20 &&` when working in the `ui/` directory.

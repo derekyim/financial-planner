@@ -76,7 +76,7 @@ export default function IdeaPage() {
           </Typography>
           <ul className={styles.list}>
             <li className={styles.listItem}>Read and understand complex multi-tab financial models with 170+ rows</li>
-            <li className={styles.listItem}>Trace formula chains to explain how any Key Result is calculated</li>
+            <li className={styles.listItem}>Trace formula chains to explain how any Strategic Outcome is calculated</li>
             <li className={styles.listItem}>Run goal-seek optimization using Latin hypercube sampling</li>
             <li className={styles.listItem}>Perform 1- and 2-variable sensitivity analyses</li>
             <li className={styles.listItem}>Provide strategic guidance via RAG over business knowledge base</li>

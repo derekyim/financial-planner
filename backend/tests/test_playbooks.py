@@ -34,7 +34,7 @@ class TestRecallPrompt:
     """Tests for the recall agent prompt."""
 
     def test_contains_key_concepts(self):
-        assert "Key Driver" in RECALL_AGENT_PROMPT or "Key Result" in RECALL_AGENT_PROMPT
+        assert "Business Lever" in RECALL_AGENT_PROMPT or "Strategic Outcome" in RECALL_AGENT_PROMPT
 
     def test_contains_formula_instructions(self):
         prompt_lower = RECALL_AGENT_PROMPT.lower()

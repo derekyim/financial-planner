@@ -21,7 +21,7 @@ _service_account_email: Optional[str] = None
 # Configurable tab names with sensible defaults
 _tab_config = {
     "model_documentation": "Model Documentation",
-    "key_drivers_results": "Key Drivers and Results",
+    "business_levers_outcomes": "Business Levers and Strategic Outcomes",
     "main_monthly": "operations",  # Main operations tab
     "tasks": "Tasks",
     "audit_log": "AuditLog",
@@ -40,7 +40,7 @@ def initialize_tools(
         spreadsheet_url: URL of the Google Sheet to work with.
         tab_names: Optional dict to override default tab names. Keys:
             - model_documentation: Tab with model docs (default: "Model Documentation")
-            - key_drivers_results: Tab with KPIs (default: "Key Drivers and Results")
+            - business_levers_outcomes: Tab with KPIs (default: "Business Levers and Strategic Outcomes")
             - main_monthly: Main operations tab (default: "operations")
             - tasks: Tasks tab (default: "Tasks")
             - audit_log: Audit log tab (default: "AuditLog")
@@ -85,7 +85,7 @@ def _resolve_sheet_name(sheet_name: str) -> str:
         "m-monthly": get_tab_name("main_monthly"),
         "monthly": get_tab_name("main_monthly"),
         "model documentation": get_tab_name("model_documentation"),
-        "key drivers and results": get_tab_name("key_drivers_results"),
+        "business levers and strategic outcomes": get_tab_name("business_levers_outcomes"),
         "tasks": get_tab_name("tasks"),
         "auditlog": get_tab_name("audit_log"),
         "audit log": get_tab_name("audit_log"),
@@ -189,36 +189,31 @@ def read_model_documentation() -> str:
         # If tab not found, try to provide helpful info from main tab
         if "notfound" in error_type.lower() or "not found" in error_str or "worksheet" in error_str:
             try:
-                # Fall back to listing available tabs
                 wb = sheets.client.open_by_url(url)
                 available = [ws.title for ws in wb.worksheets()]
-                return (
-                    f"Tab '{tab_name}' not found. Available tabs: {', '.join(available)}.\n\n"
-                    f"Consider using read_sheet_tab() with one of these tab names, "
-                    f"or update the tab configuration."
-                )
+                return f"Tab '{tab_name}' not found. Available: {', '.join(available)}."
             except Exception:
                 pass
         return _format_sheets_error(e, f"reading Model Documentation (tab: {tab_name})")
 
 
 @tool
-def read_key_drivers_and_results() -> str:
-    """Read the Key Drivers and Results tab to see important metrics.
+def read_business_levers_and_outcomes() -> str:
+    """Read the Business Levers and Strategic Outcomes tab to see important metrics.
 
-    This tab shows high-level Key Drivers (inputs) and Key Results (outputs)
+    This tab shows high-level Business Levers (inputs) and Strategic Outcomes (outputs)
     that the user cares about most. Use this to understand which metrics
     are most important for analysis.
 
-    If the dedicated tab doesn't exist, this will extract Key Drivers and 
-    Key Results from the main operations tab.
+    If the dedicated tab doesn't exist, this will extract Business Levers and 
+    Strategic Outcomes from the main operations tab.
 
     Returns:
-        Formatted content of the Key Drivers and Results tab.
+        Formatted content of the Business Levers and Strategic Outcomes tab.
     """
     sheets = get_sheets_client()
     url = get_spreadsheet_url()
-    tab_name = get_tab_name("key_drivers_results")
+    tab_name = get_tab_name("business_levers_outcomes")
 
     try:
         data = sheets.read_sheet(url, tab_name)
@@ -237,31 +232,31 @@ def read_key_drivers_and_results() -> str:
                 main_tab = get_tab_name("main_monthly")
                 data = sheets.read_sheet(url, main_tab)
                 
-                # Extract rows that are Key Drivers or Key Results
-                drivers = []
-                results = []
+                # Extract rows that are Business Levers or Strategic Outcomes
+                levers = []
+                outcomes = []
                 for row in data:
                     if len(row) > 0:
                         marker = str(row[0]).strip().lower()
-                        if "key driver" in marker:
+                        if "business lever" in marker:
                             name = row[2] if len(row) > 2 else "Unknown"
-                            drivers.append(f"  - {name}")
-                        elif "key result" in marker:
+                            levers.append(f"  - {name}")
+                        elif "strategic outcome" in marker:
                             name = row[2] if len(row) > 2 else "Unknown"
-                            results.append(f"  - {name}")
+                            outcomes.append(f"  - {name}")
                 
-                if drivers or results:
-                    output = f"Extracted from '{main_tab}' tab:\n\n"
-                    if drivers:
-                        output += "KEY DRIVERS (inputs you can change):\n" + "\n".join(drivers) + "\n\n"
-                    if results:
-                        output += "KEY RESULTS (outputs to monitor):\n" + "\n".join(results)
-                    return output
+                if levers or outcomes:
+                    parts = []
+                    if levers:
+                        parts.append("Levers:\n" + "\n".join(levers))
+                    if outcomes:
+                        parts.append("Outcomes:\n" + "\n".join(outcomes))
+                    return "\n\n".join(parts)
                 else:
-                    return f"Tab '{tab_name}' not found and could not extract Key Drivers/Results from '{main_tab}'."
+                    return f"Tab '{tab_name}' not found and could not extract Business Levers/Strategic Outcomes from '{main_tab}'."
             except Exception as inner_e:
                 return f"Tab '{tab_name}' not found. Fallback also failed: {str(inner_e)}"
-        return _format_sheets_error(e, f"reading Key Drivers and Results (tab: {tab_name})")
+        return _format_sheets_error(e, f"reading Business Levers and Strategic Outcomes (tab: {tab_name})")
 
 
 @tool
@@ -281,9 +276,9 @@ def read_sheet_tab(sheet_name: str) -> str:
     try:
         data = sheets.read_sheet(url, resolved_name)
         lines = []
-        for i, row in enumerate(data, 1):
-            line = f"Row {i}: " + " | ".join(str(cell) for cell in row if cell)
-            if line.strip() != f"Row {i}:":
+        for row in data:
+            line = " | ".join(str(cell) for cell in row if cell)
+            if line.strip():
                 lines.append(line)
         return "\n".join(lines)
     except Exception as e:
@@ -308,7 +303,7 @@ def read_cell_value(sheet_name: str, cell_notation: str) -> str:
 
     try:
         value = sheets.read_cell(url, resolved_name, cell_notation)
-        return f"Cell {resolved_name}!{cell_notation} = {value}"
+        return str(value)
     except Exception as e:
         extra = f" (resolved from '{sheet_name}')" if resolved_name != sheet_name else ""
         return _format_sheets_error(e, f"reading cell {resolved_name}!{cell_notation}{extra}")
@@ -335,9 +330,9 @@ def read_cell_formula(sheet_name: str, cell_notation: str) -> str:
         formula = sheets.read_cell_formula(url, resolved_name, cell_notation)
         formula_str = str(formula) if formula is not None else None
         if formula_str and formula_str.startswith("="):
-            return f"Formula at {resolved_name}!{cell_notation}: {formula_str}"
+            return formula_str
         else:
-            return f"Cell {resolved_name}!{cell_notation} contains a static value: {formula_str}"
+            return f"static: {formula_str}"
     except Exception as e:
         extra = f" (resolved from '{sheet_name}')" if resolved_name != sheet_name else ""
         return _format_sheets_error(e, f"reading formula at {resolved_name}!{cell_notation}{extra}")
@@ -361,10 +356,9 @@ def read_range(sheet_name: str, range_notation: str) -> str:
     try:
         data = sheets.read_range(url, resolved_name, range_notation)
         lines = []
-        for i, row in enumerate(data):
-            line = " | ".join(str(cell) for cell in row)
-            lines.append(f"Row {i+1}: {line}")
-        return f"Range {resolved_name}!{range_notation}:\n" + "\n".join(lines)
+        for row in data:
+            lines.append(" | ".join(str(cell) for cell in row))
+        return "\n".join(lines)
     except Exception as e:
         extra = f" (resolved from '{sheet_name}')" if resolved_name != sheet_name else ""
         return _format_sheets_error(e, f"reading range {resolved_name}!{range_notation}{extra}")
@@ -401,20 +395,14 @@ def sum_range(sheet_name: str, range_notation: str) -> str:
                     continue
 
         if not numbers:
-            return f"No numeric values found in {resolved_name}!{range_notation}."
+            return "No numeric values found."
 
         total = sum(numbers)
         avg = total / len(numbers)
-        lo = min(numbers)
-        hi = max(numbers)
 
         return (
-            f"Aggregation of {resolved_name}!{range_notation} ({len(numbers)} numeric values):\n"
-            f"  Sum:     ${total:,.2f}\n"
-            f"  Average: ${avg:,.2f}\n"
-            f"  Min:     ${lo:,.2f}\n"
-            f"  Max:     ${hi:,.2f}\n"
-            f"  Count:   {len(numbers)}"
+            f"sum={total:,.2f} avg={avg:,.2f} min={min(numbers):,.2f} "
+            f"max={max(numbers):,.2f} count={len(numbers)}"
         )
     except Exception as e:
         extra = f" (resolved from '{sheet_name}')" if resolved_name != sheet_name else ""
@@ -495,7 +483,7 @@ def trace_formula_chain(sheet_name: str, cell_notation: str, max_depth: int = 5)
     try:
         visited: set[str] = set()
         chain_lines = trace_recursive(resolved_name, cell_notation, 0, visited)
-        return f"Formula chain for {resolved_name}!{cell_notation}:\n" + "\n".join(chain_lines)
+        return "\n".join(chain_lines)
     except Exception as e:
         extra = f" (resolved from '{sheet_name}')" if resolved_name != sheet_name else ""
         return _format_sheets_error(e, f"tracing formula chain for {resolved_name}!{cell_notation}{extra}")
@@ -521,7 +509,7 @@ def write_cell_value(sheet_name: str, cell_notation: str, value: str) -> str:
 
     try:
         sheets.write_range(url, resolved_name, cell_notation, [[value]])
-        return f"Successfully wrote '{value}' to {resolved_name}!{cell_notation}"
+        return "ok"
     except Exception as e:
         extra = f" (resolved from '{sheet_name}')" if resolved_name != sheet_name else ""
         return _format_sheets_error(e, f"writing to {resolved_name}!{cell_notation}{extra}")
@@ -548,7 +536,7 @@ def write_range_values(sheet_name: str, start_cell: str, values: str) -> str:
     try:
         parsed_values = json.loads(values)
         sheets.write_range(url, resolved_name, start_cell, parsed_values)
-        return f"Successfully wrote values to {resolved_name}!{start_cell}"
+        return "ok"
     except json.JSONDecodeError as e:
         return f"Error parsing values JSON: {str(e)}"
     except Exception as e:
@@ -663,7 +651,7 @@ def find_forecast_columns() -> str:
     main_tab = get_tab_name("main_monthly")
 
     try:
-        # Try row 2 first (common in some models), then row 3
+        # Try row 2 first (Actual/Forecast markers), then row 3 as fallback
         for row_num in [2, 3]:
             try:
                 data = sheets.read_range(url, main_tab, f"A{row_num}:EZ{row_num}")
@@ -675,7 +663,7 @@ def find_forecast_columns() -> str:
                             forecast_cols.append(col_letter)
                     
                     if forecast_cols:
-                        return f"Forecast columns (from row {row_num}): {', '.join(forecast_cols)}"
+                        return ", ".join(forecast_cols)
             except Exception:
                 continue
         
@@ -719,11 +707,11 @@ def _parse_cell_date(val_str: str, month_map: dict) -> tuple:
 
 
 def _load_date_spine() -> tuple:
-    """Load the date spine from row 2 and return (main_tab, row_data) or raise."""
+    """Load the date spine from row 1 and return (main_tab, row_data) or raise."""
     sheets = get_sheets_client()
     url = get_spreadsheet_url()
     main_tab = get_tab_name("main_monthly")
-    data = sheets.read_range(url, main_tab, "K2:EZ2")
+    data = sheets.read_range(url, main_tab, "G1:EZ1")
     if not data or not data[0]:
         return (main_tab, [])
     return (main_tab, data[0])
@@ -733,15 +721,12 @@ def _load_date_spine() -> tuple:
 def find_date_column(date_query: str) -> str:
     """Find which column corresponds to a given date or month.
 
-    The date spine is in row 2 of the operations tab, starting at column K.
-    Use this BEFORE reading a metric value for a specific month.
-
     Args:
         date_query: A date reference like "Apr-25", "April 2025", "Apr 2025",
                     "Q2 2025", "2025-04-30", etc.
 
     Returns:
-        The column letter and cell value, e.g., "Column BX (operations!BX2 = Apr-25)"
+        The column letter for the matching date.
     """
     from dateutil import parser as dateparser
 
@@ -750,7 +735,7 @@ def find_date_column(date_query: str) -> str:
     try:
         main_tab, row = _load_date_spine()
         if not row:
-            return "No date spine found in row 2."
+            return "No date spine found in row 1."
 
         target_month, target_year = _parse_mon_yy(date_query, month_map)
 
@@ -771,10 +756,10 @@ def find_date_column(date_query: str) -> str:
                 continue
             cell_month, cell_year = _parse_cell_date(str(cell_val), month_map)
             if cell_month == target_month and cell_year == target_year:
-                col_letter = _index_to_column(i + 10)
-                return f"Column {col_letter} (cell {main_tab}!{col_letter}2 = {cell_val})"
+                col_letter = _index_to_column(i + 6)
+                return col_letter
 
-        return f"No column found matching '{date_query}' in the date spine (row 2). Available dates start at {row[0]} and end at {row[-1] if row else 'unknown'}."
+        return f"No match for '{date_query}'. Date spine: {row[0]} to {row[-1] if row else '?'}."
     except Exception as e:
         return _format_sheets_error(e, f"finding date column for '{date_query}'")
 
@@ -783,26 +768,19 @@ def find_date_column(date_query: str) -> str:
 def find_date_range(period: str) -> str:
     """Find the start and end columns for a date range (year, quarter, or custom).
 
-    Use this when the user asks about a full year, quarter, or multi-month span.
-    Returns start/end column letters so you can build a range like "BS29:CD29"
-    for use with read_range, then sum the values.
-
     Args:
         period: A period like "2025", "Q2 2025", "Q1 2024", "H1 2025",
                 "Jan-25 to Jun-25", "2024", etc.
 
     Returns:
-        Start and end columns with instructions, e.g.,
-        "Range: BS to CD (Jan-25 through Dec-25, 12 months).
-         To read a metric across this range, use read_range with e.g. 'BS29:CD29'
-         then sum the numeric values."
+        Start column, end column, date labels, and month count.
     """
     month_map = _get_month_map()
 
     try:
         main_tab, row = _load_date_spine()
         if not row:
-            return "No date spine found in row 2."
+            return "No date spine found in row 1."
 
         parsed_spine = []
         for i, cell_val in enumerate(row):
@@ -876,7 +854,7 @@ def find_date_range(period: str) -> str:
                 and (y < end_year or (y == end_year and m <= end_month))
             )
             if in_range:
-                col = _index_to_column(idx + 10)
+                col = _index_to_column(idx + 6)
                 if first_col is None:
                     first_col = col
                     first_label = label
@@ -885,13 +863,9 @@ def find_date_range(period: str) -> str:
                 count += 1
 
         if first_col is None:
-            return f"No columns found in the date spine matching '{period}'."
+            return f"No columns matching '{period}'."
 
-        return (
-            f"Range: {first_col} to {last_col} ({first_label} through {last_label}, {count} months).\n"
-            f"To read a metric across this range, use read_range with e.g. '{first_col}<ROW>:{last_col}<ROW>' "
-            f"(replace <ROW> with the metric's row number), then sum the numeric values."
-        )
+        return f"{first_col}:{last_col} ({first_label} to {last_label}, {count} months)"
     except Exception as e:
         return _format_sheets_error(e, f"finding date range for '{period}'")
 
@@ -900,14 +874,12 @@ def find_date_range(period: str) -> str:
 def find_metric_row(metric_name: str, sheet_name: str = "operations") -> str:
     """Find which row contains a given metric by searching column C.
 
-    Use this to dynamically locate metrics instead of relying on hardcoded row numbers.
-
     Args:
         metric_name: The metric to find (e.g., "Orders", "EBITDA", "Gross Sales").
         sheet_name: Tab to search in (default: "operations").
 
     Returns:
-        Row number and cell reference, e.g., "Row 15 (operations!C15 = Orders)"
+        The row number for the matching metric.
     """
     sheets = get_sheets_client()
     url = get_spreadsheet_url()
@@ -935,11 +907,11 @@ def find_metric_row(metric_name: str, sheet_name: str = "operations") -> str:
 
         if exact_match:
             row_num, label = exact_match
-            return f"Row {row_num} ({resolved_name}!C{row_num} = {label})"
+            return str(row_num)
 
         if partial_matches:
-            results = [f"  Row {r}: {label}" for r, label in partial_matches[:5]]
-            return f"No exact match for '{metric_name}'. Partial matches in '{resolved_name}':\n" + "\n".join(results)
+            results = [f"{r}: {label}" for r, label in partial_matches[:5]]
+            return "Partial matches: " + ", ".join(results)
 
         return f"Metric '{metric_name}' not found in column C of '{resolved_name}'."
     except Exception as e:
@@ -959,7 +931,7 @@ def _index_to_column(index: int) -> str:
 # Export the list of all tools for binding to agents
 ALL_TOOLS = [
     read_model_documentation,
-    read_key_drivers_and_results,
+    read_business_levers_and_outcomes,
     read_sheet_tab,
     read_cell_value,
     read_cell_formula,
@@ -979,7 +951,7 @@ ALL_TOOLS = [
 
 READ_ONLY_TOOLS = [
     read_model_documentation,
-    read_key_drivers_and_results,
+    read_business_levers_and_outcomes,
     read_sheet_tab,
     read_cell_value,
     read_cell_formula,
@@ -994,7 +966,7 @@ READ_ONLY_TOOLS = [
 
 GOAL_SEEK_TOOLS = [
     read_model_documentation,
-    read_key_drivers_and_results,
+    read_business_levers_and_outcomes,
     read_sheet_tab,
     read_cell_value,
     read_cell_formula,

@@ -41,8 +41,8 @@ Today, customer questions span 10 major topic clusters:
 |---|-----------|-----------------|
 | 1 | What is the Cash Conversion Cycle, how do you calculate it? | Gives the formula for Cash Conversion Cycle by searching the web (Tavily) |
 | 2 | What is EBITDA and how is it calculated in this model? | Explains EBITDA = EBIT + Depreciation + Amortization, references operations row 194 |
-| 3 | What are the Key Drivers for this business? | Lists Orders, AoV, CaC, Orders Per Customer, Repeat Purchase Rate, Discounts %, Refunds %, Shipping Income % |
-| 4 | I want to increase EBITDA by 10% while keeping cash above $1M. What should I change? | Runs goal-seek with 3 scenario combinations adjusting Key Drivers, returns ranked solutions |
+| 3 | What are the Business Levers for this business? | Lists Orders, AoV, CaC, Orders Per Customer, Repeat Purchase Rate, Discounts %, Refunds %, Shipping Income % |
+| 4 | I want to increase EBITDA by 10% while keeping cash above $1M. What should I change? | Runs goal-seek with 3 scenario combinations adjusting Business Levers, returns ranked solutions |
 | 5 | What if I raised product prices by $5 starting in June 2025? | Traces the AoV impact through Gross Sales, Net Revenue, Gross Profit, and EBITDA formulas |
 | 6 | How should I optimize my Amazon ad spend for a powdered drink brand? | Retrieves strategic guidance from RAG knowledge base on Amazon advertising strategy |
 | 7 | What are the latest trends in DTC ecommerce for CPG brands? | Uses Tavily to search current web sources for DTC ecommerce trends and summarizes findings |

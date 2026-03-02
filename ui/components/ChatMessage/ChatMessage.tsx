@@ -3,6 +3,7 @@ import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import ReactMarkdown from 'react-markdown';
 import { APP_SHORT_NAME } from '@/constants';
 import styles from './ChatMessage.module.css';
 
@@ -15,7 +16,8 @@ type ChatMessageProps = {
 /**
  * ChatMessage Component
  * Displays a single chat message with avatar and styling
- * based on whether it's from the user or AI
+ * based on whether it's from the user or AI.
+ * AI messages are rendered as Markdown; user messages as plain text.
  */
 export default function ChatMessage({ message, isUser, timestamp }: ChatMessageProps) {
   return (
@@ -32,12 +34,18 @@ export default function ChatMessage({ message, isUser, timestamp }: ChatMessageP
         >
           {isUser ? 'You' : APP_SHORT_NAME}
         </Typography>
-        <Typography 
-          variant="body1" 
-          className={`${styles.text} ${isUser ? styles.textUser : styles.textAi}`}
-        >
-          {message}
-        </Typography>
+        {isUser ? (
+          <Typography 
+            variant="body1" 
+            className={`${styles.text} ${styles.textUser}`}
+          >
+            {message}
+          </Typography>
+        ) : (
+          <Box className={`${styles.text} ${styles.textAi} ${styles.markdown}`}>
+            <ReactMarkdown>{message}</ReactMarkdown>
+          </Box>
+        )}
         {timestamp && (
           <Typography 
             variant="caption" 

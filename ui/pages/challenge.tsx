@@ -21,12 +21,12 @@ const EVAL_PAIRS = [
     expectedOutput: 'Explains EBITDA = EBIT + Depreciation + Amortization, references operations row 194.',
   },
   {
-    input: 'What are the Key Drivers for this business?',
+    input: 'What are the Business Levers for this business?',
     expectedOutput: 'Lists Orders, AoV, CaC, Orders Per Customer, Repeat Purchase Rate, Discounts %, Refunds %, Shipping Income %.',
   },
   {
     input: 'I want to increase EBITDA by 10% while keeping cash above $1M. What should I change?',
-    expectedOutput: 'Runs goal-seek with 3 scenario combinations adjusting Key Drivers, returns ranked solutions.',
+    expectedOutput: 'Runs goal-seek with 3 scenario combinations adjusting Business Levers, returns ranked solutions.',
   },
   {
     input: 'What if I raised product prices by $5 starting in June 2025?',

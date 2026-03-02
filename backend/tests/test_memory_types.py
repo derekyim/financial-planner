@@ -104,11 +104,11 @@ class TestSemanticMemory:
         # Results depend on store implementation
         assert isinstance(results, list)
 
-    def test_store_key_driver(self, memory_store):
-        """Test storing a Key Driver."""
+    def test_store_business_lever(self, memory_store):
+        """Test storing a Business Lever."""
         sem = SemanticMemory(memory_store)
         
-        sem.store_key_driver(
+        sem.store_business_lever(
             driver_id="orders",
             name="Orders",
             description="Number of customer orders per period",
@@ -119,11 +119,11 @@ class TestSemanticMemory:
         results = sem.search("Orders customer")
         assert isinstance(results, list)
 
-    def test_store_key_result(self, memory_store):
-        """Test storing a Key Result."""
+    def test_store_strategic_outcome(self, memory_store):
+        """Test storing a Strategic Outcome."""
         sem = SemanticMemory(memory_store)
         
-        sem.store_key_result(
+        sem.store_strategic_outcome(
             result_id="gross_sales",
             name="Gross Sales",
             description="Total revenue before deductions",
