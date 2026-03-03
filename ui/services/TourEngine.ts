@@ -68,9 +68,12 @@ class TourEngine {
   private loadState(): void {
     if (typeof window === 'undefined') return;
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as string[];
+      const match = document.cookie
+        .split('; ')
+        .find((c) => c.startsWith(`${STORAGE_KEY}=`));
+      if (match) {
+        const value = decodeURIComponent(match.split('=')[1]);
+        const parsed = JSON.parse(value) as string[];
         this.completedTours = new Set(parsed);
       }
     } catch {
@@ -81,12 +84,13 @@ class TourEngine {
   private saveState(): void {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
+      const value = encodeURIComponent(
         JSON.stringify(Array.from(this.completedTours)),
       );
+      const maxAge = 365 * 24 * 60 * 60;
+      document.cookie = `${STORAGE_KEY}=${value}; path=/; max-age=${maxAge}; SameSite=Lax`;
     } catch {
-      // localStorage may be unavailable
+      // cookie may be unavailable
     }
   }
 

@@ -964,6 +964,244 @@ READ_ONLY_TOOLS = [
     find_metric_row,
 ]
 
+@tool
+def optimize_levers(
+    levers_json: str,
+    objective_metric: str,
+    objective_period: str,
+    direction: str = "maximize",
+    targets_json: str = "[]",
+    samples: int = 500,
+) -> str:
+    """Run in-memory optimization to find the best lever combinations for a goal.
+
+    This uses the HyperFormula calc engine to test hundreds of scenarios
+    in seconds without modifying the live spreadsheet.
+
+    Args:
+        levers_json: JSON array of levers to vary. Each lever:
+            {"metric": "Orders", "min": 180000, "max": 280000, "label": "Orders"}
+        objective_metric: The metric to optimize (e.g., "EBITDA").
+        objective_period: The date column to evaluate (e.g., "Dec-27").
+        direction: "maximize" or "minimize".
+        targets_json: JSON array of constraints. Each:
+            {"metric": "Cash", "period": "Dec-27", "operator": ">=", "value": 0, "label": "Cash positive"}
+        samples: Number of scenarios to test (default 500).
+
+    Returns:
+        Top solutions ranked by objective, with lever values and outcomes.
+    """
+    from agents import calc_client
+
+    if not calc_client.is_available():
+        return "Calc engine unavailable. Falling back to manual goal seek."
+
+    try:
+        levers_input = json.loads(levers_json)
+        targets_input = json.loads(targets_json)
+    except json.JSONDecodeError as e:
+        return f"Invalid JSON: {e}"
+
+    sheets = get_sheets_client()
+    url = get_spreadsheet_url()
+    main_tab = get_tab_name("main_monthly")
+
+    col_c_data = sheets.read_range(url, main_tab, "C1:C300")
+    row_index = {}
+    for i, row_data in enumerate(col_c_data):
+        if row_data:
+            label = str(row_data[0]).strip().lower()
+            if label:
+                row_index[label] = i
+
+    def find_row(metric: str) -> int:
+        key = metric.strip().lower()
+        if key in row_index:
+            return row_index[key]
+        raise ValueError(f"Metric '{metric}' not found in column C")
+
+    month_map = _get_month_map()
+    _, date_spine = _load_date_spine()
+
+    def find_col(period: str) -> int:
+        target_m, target_y = _parse_mon_yy(period, month_map)
+        if target_m is None:
+            from dateutil import parser as dateparser
+            parsed = dateparser.parse(period)
+            if parsed:
+                target_m, target_y = parsed.month, parsed.year
+        if target_m is None:
+            raise ValueError(f"Cannot parse period '{period}'")
+        for i, cell_val in enumerate(date_spine):
+            if cell_val is None or str(cell_val).strip() == "":
+                continue
+            cm, cy = _parse_cell_date(str(cell_val), month_map)
+            if cm == target_m and cy == target_y:
+                return i + 6
+        raise ValueError(f"Period '{period}' not in date spine")
+
+    try:
+        obj_row = find_row(objective_metric)
+        obj_col = find_col(objective_period)
+
+        engine_levers = []
+        for lv in levers_input:
+            r = find_row(lv["metric"])
+            c = obj_col
+            engine_levers.append({
+                "sheet": main_tab,
+                "col": c,
+                "row": r,
+                "min": lv["min"],
+                "max": lv["max"],
+                "label": lv.get("label", lv["metric"]),
+            })
+
+        engine_targets = []
+        for tgt in targets_input:
+            r = find_row(tgt["metric"])
+            c = find_col(tgt.get("period", objective_period))
+            engine_targets.append({
+                "sheet": main_tab,
+                "col": c,
+                "row": r,
+                "operator": tgt["operator"],
+                "value": tgt["value"],
+                "label": tgt.get("label", tgt["metric"]),
+            })
+
+        result = calc_client.optimize(
+            levers=engine_levers,
+            objective={"sheet": main_tab, "col": obj_col, "row": obj_row, "label": objective_metric},
+            targets=engine_targets,
+            direction=direction,
+            samples=samples,
+            top_n=5,
+        )
+
+        solutions = result.get("solutions", [])
+        if not solutions:
+            return (
+                f"No feasible solutions found in {result.get('totalSampled', 0)} samples. "
+                "Try widening lever ranges or relaxing constraints."
+            )
+
+        lines = [
+            f"Tested {result['totalSampled']} scenarios, "
+            f"{result['feasibleCount']} met all constraints "
+            f"({result.get('elapsed_ms', '?')}ms).\n"
+        ]
+        for sol in solutions:
+            lines.append(f"**Solution {sol['rank']}** — {objective_metric}: {sol['objectiveValue']:,.2f}")
+            for lv in sol["leverValues"]:
+                lines.append(f"  {lv['label']}: {lv['value']:,.2f}")
+            for tgt in sol.get("targetResults", []):
+                status = "met" if tgt["met"] else "NOT MET"
+                lines.append(f"  {tgt['label']}: {tgt['value']:,.2f} ({tgt['constraint']}) [{status}]")
+            lines.append("")
+
+        return "\n".join(lines)
+
+    except Exception as e:
+        return f"Optimization error: {e}"
+
+
+@tool
+def what_if_scenario(changes_json: str, read_metrics_json: str) -> str:
+    """Test a what-if scenario using the in-memory calc engine.
+
+    Temporarily changes lever values and reads the resulting metric values
+    without modifying the live spreadsheet.
+
+    Args:
+        changes_json: JSON array of changes to apply:
+            [{"metric": "Orders", "period": "Jun-25", "value": 250000}]
+        read_metrics_json: JSON array of metrics to read after changes:
+            [{"metric": "EBITDA", "period": "Jun-25"}, {"metric": "Cash", "period": "Dec-25"}]
+
+    Returns:
+        The resulting metric values after applying the changes.
+    """
+    from agents import calc_client
+
+    if not calc_client.is_available():
+        return "Calc engine unavailable."
+
+    try:
+        changes = json.loads(changes_json)
+        reads = json.loads(read_metrics_json)
+    except json.JSONDecodeError as e:
+        return f"Invalid JSON: {e}"
+
+    sheets = get_sheets_client()
+    url = get_spreadsheet_url()
+    main_tab = get_tab_name("main_monthly")
+
+    col_c_data = sheets.read_range(url, main_tab, "C1:C300")
+    row_index = {}
+    for i, row_data in enumerate(col_c_data):
+        if row_data:
+            label = str(row_data[0]).strip().lower()
+            if label:
+                row_index[label] = i
+
+    def find_row(metric: str) -> int:
+        key = metric.strip().lower()
+        if key in row_index:
+            return row_index[key]
+        raise ValueError(f"Metric '{metric}' not found")
+
+    month_map = _get_month_map()
+    _, date_spine = _load_date_spine()
+
+    def find_col(period: str) -> int:
+        target_m, target_y = _parse_mon_yy(period, month_map)
+        if target_m is None:
+            from dateutil import parser as dateparser
+            parsed = dateparser.parse(period)
+            if parsed:
+                target_m, target_y = parsed.month, parsed.year
+        if target_m is None:
+            raise ValueError(f"Cannot parse period '{period}'")
+        for i, cell_val in enumerate(date_spine):
+            if cell_val is None or str(cell_val).strip() == "":
+                continue
+            cm, cy = _parse_cell_date(str(cell_val), month_map)
+            if cm == target_m and cy == target_y:
+                return i + 6
+        raise ValueError(f"Period '{period}' not in date spine")
+
+    try:
+        sets = []
+        for ch in changes:
+            r = find_row(ch["metric"])
+            c = find_col(ch["period"])
+            sets.append({"sheet": main_tab, "col": c, "row": r, "value": ch["value"]})
+
+        read_cells = []
+        read_labels = []
+        for rd in reads:
+            r = find_row(rd["metric"])
+            c = find_col(rd["period"])
+            read_cells.append({"sheet": main_tab, "col": c, "row": r})
+            read_labels.append(f"{rd['metric']} ({rd['period']})")
+
+        results = calc_client.calculate(sets=sets, reads=read_cells)
+
+        lines = []
+        for label, res in zip(read_labels, results):
+            val = res.get("value", "N/A")
+            if isinstance(val, (int, float)):
+                lines.append(f"{label}: {val:,.2f}")
+            else:
+                lines.append(f"{label}: {val}")
+
+        return "\n".join(lines)
+
+    except Exception as e:
+        return f"What-if error: {e}"
+
+
 GOAL_SEEK_TOOLS = [
     read_model_documentation,
     read_business_levers_and_outcomes,
@@ -980,4 +1218,6 @@ GOAL_SEEK_TOOLS = [
     find_date_column,
     find_date_range,
     find_metric_row,
+    optimize_levers,
+    what_if_scenario,
 ]

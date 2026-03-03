@@ -564,6 +564,37 @@ def setup_agent(
     }
     print("Financial agent initialized successfully!")
 
+    _load_calc_engine(credentials_path, spreadsheet_url)
+
+
+def _load_calc_engine(credentials_path: str, spreadsheet_url: str) -> None:
+    """Export the operations tab and load it into the HyperFormula calc engine."""
+    from agents import calc_client
+    from agents.tools import get_tab_name
+
+    if not calc_client.is_available():
+        print("[CalcEngine] Service not running — skipping model load. "
+              "Goal Seek will fall back to live spreadsheet writes.")
+        return
+
+    try:
+        from shared.sheets_utilities import SheetsUtilities
+        sheets = SheetsUtilities(credentials_path)
+        main_tab = get_tab_name("main_monthly")
+        print(f"[CalcEngine] Exporting '{main_tab}' tab with formulas...")
+        sid = sheets._extract_spreadsheet_id(spreadsheet_url)
+        wb = sheets.client.open_by_key(sid)
+        ws = wb.worksheet(main_tab)
+        formulas = ws.get_all_values(value_render_option='FORMULA')
+        tab_data = [{"name": main_tab, "data": formulas}]
+        print(f"[CalcEngine] Exported 1 tab ({len(formulas)} rows), sending to calc engine...")
+        result = calc_client.load_model(tab_data)
+        print(f"[CalcEngine] Loaded: {result.get('sheets')} sheets, "
+              f"{result.get('cells')} cells")
+    except Exception as e:
+        print(f"[CalcEngine] Failed to load model: {e}. "
+              "Goal Seek will fall back to live spreadsheet writes.")
+
 
 def chat(
     message: str,

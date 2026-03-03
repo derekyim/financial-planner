@@ -93,8 +93,9 @@ The architecture uses a multi-agent router at the front to determine the topic o
 
 | Component | Choice | Rationale |
 |-----------|--------|-----------|
-| LLM (Supervisor) | GPT-4o | Best reasoning for complex routing decisions and structured output |
-| LLM (Agents) | GPT-4o-mini | Cost-effective for tool-calling agents that follow structured playbooks |
+| LLM (Supervisor) | Configurable (OpenAI / Anthropic / Gemini) | Multi-provider LLM factory; defaults to Claude Sonnet 4.5 for routing |
+| LLM (Agents) | Configurable (OpenAI / Anthropic / Gemini) | Same factory pattern; model selected via `setup_agent()` parameters |
+| Calculation Engine | HyperFormula (Node.js) | Headless spreadsheet with ~400 built-in functions; runs goal seek scenarios in-memory |
 | Agent Orchestration | LangGraph | Native support for cyclic tool-calling loops, checkpointing, and memory stores |
 | Tools | Google Sheets API (gspread) | Direct programmatic access to read/write cells, formulas, and ranges |
 | Embedding Model | text-embedding-3-small | Production OpenAI embedding model; 1536 dims, good cost/quality tradeoff |
@@ -343,15 +344,41 @@ Next.js/React UI  -->  FastAPI Backend  -->  LangGraph Supervisor
                           Recall     Goal Seek     Strategic     Respond
                             |            |             |
                        GSheets API  GSheets API   RAG + Tavily
+                                        |
+                                   CalcEngine
+                                  (HyperFormula)
 ```
 
 **Agents:**
 - **Recall** — Reads model facts, metrics, and formula chains from Google Sheets
-- **Goal Seek** — Finds optimal input values to hit target KPIs using scenario analysis
+- **Goal Seek** — Finds optimal input values to hit target KPIs using the HyperFormula calc engine for fast in-memory optimization
 - **Strategic Guidance** — RAG over business knowledge base + Tavily web search for current trends
 - **Respond** — Direct answers for simple queries
 
-**Key Technologies:** LangGraph, LangChain, OpenAI (GPT-4o / GPT-4o-mini), Qdrant, RAGAS, Tavily, gspread, Next.js, Material UI
+**Key Technologies:** LangGraph, LangChain, OpenAI / Anthropic / Google Gemini (multi-provider via LLM factory), HyperFormula, Qdrant, RAGAS, Tavily, gspread, Next.js, Material UI
+
+### HyperFormula Calculation Engine
+
+The Goal Seek agent is backed by an in-memory calculation engine powered by [HyperFormula](https://hyperformula.handsontable.com/) — a headless spreadsheet with ~400 built-in functions and Google Sheets formula compatibility.
+
+**How it works:**
+
+1. On startup, the Python backend exports every tab from the Google Sheet (preserving all formulas) and sends them to the calc engine via HTTP.
+2. HyperFormula builds a full in-memory copy of the spreadsheet with a dependency graph.
+3. When the Goal Seek agent needs to test scenarios, it calls the `optimize_levers` tool which sends lever ranges, an objective metric, and constraints to the calc engine.
+4. The calc engine runs Latin hypercube sampling over the lever ranges — testing 500+ combinations in seconds by setting cells, recalculating, and reading results all in memory.
+5. Top feasible solutions are returned, ranked by objective value.
+
+**Why this matters:**
+
+| Aspect | Before (Google Sheets API) | After (HyperFormula) |
+|--------|---------------------------|---------------------|
+| Scenarios tested | ~15 (rate-limited) | 500+ (in-memory) |
+| Time per optimization | 30-60 seconds | 1-3 seconds |
+| API calls | ~100 per request | 2-3 (one-time load) |
+| Risk to live model | High (writes to sheet) | Zero (read-only copy) |
+
+The calc engine also supports `what_if_scenario` for testing specific lever changes without touching the live spreadsheet. If the calc engine service isn't running, the Goal Seek agent automatically falls back to the original Google Sheets write/read/restore approach.
 
 ## Prerequisites
 
@@ -368,15 +395,30 @@ Create a `.env` file in `backend/`:
 
 ```env
 OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...       # required if using Claude models
+GOOGLE_API_KEY=AI...               # required if using Gemini models
 TAVILY_API_KEY=tvly-...
 GOOGLE_CREDENTIALS_PATH=credentials.json
 SPREADSHEET_URL=https://docs.google.com/yoursheet
+CALC_ENGINE_URL=http://localhost:4100  # optional, defaults to localhost:4100
 LANGCHAIN_API_KEY=lsv2-...        # optional, for LangSmith tracing
 LANGCHAIN_TRACING_V2=true          # optional
 ADVANCED_RETRIEVAL=false           # set to true for hybrid BM25+dense retrieval
 ```
 
-### 2. Backend
+### 2. Calculation Engine (optional but recommended)
+
+```bash
+cd calc-engine
+nvm use 20
+npm install
+npm run build
+npm start
+```
+
+The calc engine starts at `http://localhost:4100`. If not running, Goal Seek falls back to live Google Sheets API calls.
+
+### 3. Backend
 
 ```bash
 cd backend
@@ -386,14 +428,14 @@ pip install -r ../requirements-dev.txt
 uvicorn api.index:app --reload --port 8000
 ```
 
-The API server starts at `http://localhost:8000`.
+The API server starts at `http://localhost:8000`. On startup, it automatically loads the financial model into the calc engine (if available).
 
-### 3. Frontend
+### 4. Frontend
 
 ```bash
 cd ui
+nvm use 20
 npm install
-nvm use v20
 npm run dev
 ```
 
@@ -442,19 +484,27 @@ ADVANCED_RETRIEVAL=true .venv/bin/python -m evals.run_evals --rag
 backend/
   agents/           # LangGraph agent definitions and tools
     financial_agent.py   # Main multi-agent graph
+    llm_factory.py       # Multi-provider LLM factory (OpenAI, Anthropic, Gemini)
+    calc_client.py       # HTTP client for the HyperFormula calc engine
     rag_pipeline.py      # RAG pipeline (dense + hybrid retrieval)
     playbooks.py         # Agent system prompts
-    tools.py             # Google Sheets tools
+    tools.py             # Google Sheets tools + optimize_levers, what_if_scenario
     strategic_tools.py   # Tavily web search tool
     memory_types.py      # 5 memory types
   evals/             # RAGAS evaluation framework
-  shared/            # Shared utilities and evaluations
+  shared/            # Shared utilities (sheets_utilities, config)
   test_data/         # Manual test cases for evaluation
   tests/             # Unit tests
   integration_tests/ # Integration tests (live APIs)
   data/              # Knowledge base documents for RAG
   api/               # FastAPI server
   docs/              # Project documentation
+
+calc-engine/         # HyperFormula calculation engine (Node.js)
+  src/
+    engine.ts        # HyperFormula wrapper (load, set, recalculate, read)
+    optimizer.ts     # Latin hypercube sampling optimizer
+    server.ts        # Express API (/load, /calculate, /optimize)
 
 ui/
   pages/             # Next.js pages (chat, docs, evals)

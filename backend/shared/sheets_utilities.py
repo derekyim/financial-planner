@@ -153,3 +153,18 @@ class SheetsUtilities:
         spreadsheet = self.client.open_by_key(spreadsheet_id)
         worksheet = spreadsheet.worksheet(sheet_name)
         return worksheet.acell(cell_notation, value_render_option='FORMULA').value
+
+    def export_all_tabs(self, spreadsheet_url: str) -> list[dict]:
+        """
+        Export every tab with formulas preserved (for loading into a calc engine).
+
+        Returns a list of dicts: [{"name": "Sheet1", "data": [[cell, ...], ...]}, ...]
+        Each cell is either a formula string (starting with '=') or its computed value.
+        """
+        spreadsheet_id = self._extract_spreadsheet_id(spreadsheet_url)
+        spreadsheet = self.client.open_by_key(spreadsheet_id)
+        result = []
+        for ws in spreadsheet.worksheets():
+            formulas = ws.get_all_values(value_render_option='FORMULA')
+            result.append({"name": ws.title, "data": formulas})
+        return result

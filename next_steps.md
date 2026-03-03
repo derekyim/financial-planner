@@ -14,7 +14,6 @@ get working with the google sheet for read/write
 * test making sides
 * test variance
 * test sensitiveies
-* run 'goal-seek' or 'solver'
 * decompose all formulas to understand the model
 * new logo and styling
 
@@ -28,5 +27,6 @@ DONE
 ** handle markdown
 * upgrade to opus 4-6
 ** support multiple -model
-
+* run 'goal-seek' or 'solver'
+--What combinations of CaC, Ad Spend, and AoV get me to $1M EBITDA by Dec 2027?
 
