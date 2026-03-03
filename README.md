@@ -380,6 +380,11 @@ The Goal Seek agent is backed by an in-memory calculation engine powered by [Hyp
 
 The calc engine also supports `what_if_scenario` for testing specific lever changes without touching the live spreadsheet. If the calc engine service isn't running, the Goal Seek agent automatically falls back to the original Google Sheets write/read/restore approach.
 
+## Test it out
+What combinations of CaC, Ad Spend, and AoV get me to $1M EBITDA by Dec 2027?
+
+Ok apply that for me
+
 ## Prerequisites
 
 - Python 3.11+
