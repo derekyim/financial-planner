@@ -11,11 +11,11 @@ export type StreamCallbacks = {
   onError?: (text: string) => void;
 };
 
-async function sendMessage(message: string, threadId?: string): Promise<string> {
+async function sendMessage(message: string, threadId?: string, spreadsheetUrl?: string): Promise<string> {
   const response = await fetch(`${API_BASE_URL}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, thread_id: threadId }),
+    body: JSON.stringify({ message, thread_id: threadId, spreadsheet_url: spreadsheetUrl }),
   });
 
   if (!response.ok) {
@@ -32,11 +32,12 @@ async function sendMessageStream(
   callbacks: StreamCallbacks,
   threadId?: string,
   signal?: AbortSignal,
+  spreadsheetUrl?: string,
 ): Promise<string> {
   const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, thread_id: threadId }),
+    body: JSON.stringify({ message, thread_id: threadId, spreadsheet_url: spreadsheetUrl }),
     signal,
   });
 

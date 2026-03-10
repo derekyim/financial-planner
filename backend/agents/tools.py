@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Optional
 from langchain_core.tools import tool
 
-from shared.sheets_utilities import SheetsUtilities
+from shared.sheets_utilities import SheetsUtilities, StorageQuotaError
 
 
 # Global sheets client - will be initialized when tools are created
@@ -26,6 +26,44 @@ _tab_config = {
     "tasks": "Tasks",
     "audit_log": "AuditLog",
 }
+
+# Per-spreadsheet caches — keyed by spreadsheet URL, cleared on model switch.
+# Avoids re-reading the same structural data from Google Sheets on every tool call.
+_cache: dict = {}
+
+
+def _get_cache_key() -> str:
+    return _current_spreadsheet_url or ""
+
+
+def _invalidate_cache() -> None:
+    _cache.clear()
+
+
+def _cached_date_spine() -> tuple:
+    """Return (main_tab, row_data) from cache, fetching once per model."""
+    key = _get_cache_key()
+    if key and "date_spine" in _cache and _cache.get("_spine_key") == key:
+        return _cache["date_spine"]
+    result = _load_date_spine_uncached()
+    _cache["date_spine"] = result
+    _cache["_spine_key"] = key
+    return result
+
+
+def _cached_metric_index(sheet_name: str) -> list:
+    """Return column C data from cache, fetching once per model+sheet."""
+    key = (_get_cache_key(), sheet_name)
+    cached = _cache.get("metric_index")
+    if cached and _cache.get("_metric_key") == key:
+        return cached
+    sheets = get_sheets_client()
+    url = get_spreadsheet_url()
+    resolved = _resolve_sheet_name(sheet_name)
+    data = sheets.read_range(url, resolved, "C1:C300")
+    _cache["metric_index"] = data
+    _cache["_metric_key"] = key
+    return data
 
 
 def initialize_tools(
@@ -706,8 +744,8 @@ def _parse_cell_date(val_str: str, month_map: dict) -> tuple:
     return (None, None)
 
 
-def _load_date_spine() -> tuple:
-    """Load the date spine from row 1 and return (main_tab, row_data) or raise."""
+def _load_date_spine_uncached() -> tuple:
+    """Fetch the date spine from row 1 via the Sheets API."""
     sheets = get_sheets_client()
     url = get_spreadsheet_url()
     main_tab = get_tab_name("main_monthly")
@@ -715,6 +753,11 @@ def _load_date_spine() -> tuple:
     if not data or not data[0]:
         return (main_tab, [])
     return (main_tab, data[0])
+
+
+def _load_date_spine() -> tuple:
+    """Load the date spine (cached per model to avoid repeated API calls)."""
+    return _cached_date_spine()
 
 
 @tool
@@ -881,12 +924,10 @@ def find_metric_row(metric_name: str, sheet_name: str = "operations") -> str:
     Returns:
         The row number for the matching metric.
     """
-    sheets = get_sheets_client()
-    url = get_spreadsheet_url()
     resolved_name = _resolve_sheet_name(sheet_name)
 
     try:
-        data = sheets.read_range(url, resolved_name, "C1:C300")
+        data = _cached_metric_index(sheet_name)
         if not data:
             return f"No data found in column C of '{resolved_name}'."
 
@@ -928,6 +969,181 @@ def _index_to_column(index: int) -> str:
     return result
 
 
+def _column_to_index(col: str) -> int:
+    """Convert Excel column letter to 0-based index (A=0, B=1, ..., AA=26)."""
+    result = 0
+    for ch in col.upper():
+        result = result * 26 + (ord(ch) - ord("A") + 1)
+    return result - 1
+
+
+@tool
+def add_strategic_outcomes_chart(
+    metrics_csv: str = "",
+    start_date: str = "",
+    end_date: str = "",
+    chart_title: str = "Strategic Outcomes Over Time",
+) -> str:
+    """Create a line chart of Strategic Outcome metrics on a new 'Charts' tab.
+
+    Plots the selected metrics as separate lines with the date spine on the X-axis.
+    If no metrics are specified, all Strategic Outcomes from the model are charted.
+
+    Args:
+        metrics_csv: Comma-separated metric names to chart (e.g., "EBITDA,Cash,Gross Sales").
+                     If empty, charts all Strategic Outcomes found in the model.
+        start_date: Optional start date like "Jan-25". If empty, uses the first forecast date.
+        end_date: Optional end date like "Dec-29". If empty, uses the last date in the spine.
+        chart_title: Title for the chart.
+
+    Returns:
+        Confirmation message with the chart tab name.
+    """
+    sheets = get_sheets_client()
+    url = get_spreadsheet_url()
+    main_tab = get_tab_name("main_monthly")
+
+    try:
+        col_a_data = sheets.read_range(url, main_tab, "A1:A300")
+        col_c_data = sheets.read_range(url, main_tab, "C1:C300")
+
+        outcome_rows: list[tuple[int, str]] = []
+        for i in range(len(col_a_data)):
+            marker = str(col_a_data[i][0]).strip().lower() if col_a_data[i] else ""
+            name = str(col_c_data[i][0]).strip() if i < len(col_c_data) and col_c_data[i] else ""
+            if "strategic outcome" in marker and name:
+                outcome_rows.append((i, name))
+
+        if metrics_csv.strip():
+            requested = [m.strip().lower() for m in metrics_csv.split(",")]
+            filtered = []
+            for row_idx, name in outcome_rows:
+                if name.lower() in requested:
+                    filtered.append((row_idx, name))
+            for req in requested:
+                if not any(name.lower() == req for _, name in filtered):
+                    for i, row_data in enumerate(col_c_data):
+                        cell = str(row_data[0]).strip() if row_data else ""
+                        if cell.lower() == req:
+                            filtered.append((i, cell))
+                            break
+            if not filtered:
+                return f"None of the requested metrics ({metrics_csv}) were found."
+            outcome_rows = filtered
+
+        if not outcome_rows:
+            return "No Strategic Outcome metrics found in the model."
+
+        _, date_spine = _load_date_spine()
+        if not date_spine:
+            return "No date spine found in row 1."
+
+        month_map = _get_month_map()
+
+        start_col_idx = 6  # Column G = index 6 (0-based)
+        end_col_idx = start_col_idx + len(date_spine)
+
+        if start_date.strip():
+            target_m, target_y = _parse_mon_yy(start_date, month_map)
+            if target_m:
+                for i, cell_val in enumerate(date_spine):
+                    cm, cy = _parse_cell_date(str(cell_val), month_map)
+                    if cm == target_m and cy == target_y:
+                        start_col_idx = 6 + i
+                        break
+
+        if end_date.strip():
+            target_m, target_y = _parse_mon_yy(end_date, month_map)
+            if target_m:
+                for i, cell_val in enumerate(date_spine):
+                    cm, cy = _parse_cell_date(str(cell_val), month_map)
+                    if cm == target_m and cy == target_y:
+                        end_col_idx = 6 + i + 1
+                        break
+
+        series_rows = [r for r, _ in outcome_rows]
+        series_labels = [name for _, name in outcome_rows]
+
+        chart_tab = sheets.create_line_chart(
+            spreadsheet_url=url,
+            source_sheet_name=main_tab,
+            title=chart_title,
+            domain_row=0,  # row 1 (0-based) = date spine
+            series_rows=series_rows,
+            series_labels=series_labels,
+            start_col=start_col_idx,
+            end_col=end_col_idx,
+            chart_sheet_name="Charts",
+        )
+
+        date_range_str = ""
+        if date_spine:
+            first = date_spine[start_col_idx - 6] if (start_col_idx - 6) < len(date_spine) else "?"
+            last = date_spine[end_col_idx - 7] if (end_col_idx - 7) < len(date_spine) else "?"
+            date_range_str = f" ({first} to {last})"
+
+        metric_names = ", ".join(series_labels)
+        return (
+            f"Chart created on the '{chart_tab}' tab with {len(series_labels)} metrics: "
+            f"{metric_names}{date_range_str}"
+        )
+
+    except Exception as e:
+        return _format_sheets_error(e, "creating Strategic Outcomes chart")
+
+
+@tool
+def copy_model(new_name: str) -> str:
+    """Copy the current spreadsheet model to a new spreadsheet and switch to it.
+
+    Use this when the user wants to create a variant (e.g., "EBITDA 1M") of
+    their current model without modifying the original. All subsequent tool
+    calls will operate on the new copy.
+
+    Args:
+        new_name: Name for the new spreadsheet copy.
+
+    Returns:
+        The URL of the newly created spreadsheet.
+    """
+    global _current_spreadsheet_url
+    sheets = get_sheets_client()
+    url = get_spreadsheet_url()
+
+    try:
+        new_url = sheets.copy_spreadsheet(url, new_name)
+        _current_spreadsheet_url = new_url
+        return f"Created '{new_name}'. Now working on: {new_url}"
+    except StorageQuotaError:
+        return (
+            "STORAGE QUOTA ERROR: The service account has no Google Drive storage "
+            "(free-tier GCP project). Cannot create a copy of the spreadsheet.\n\n"
+            "Workaround: Ask the user to manually copy the spreadsheet in Google "
+            "Sheets (File > Make a copy), share it with the service account, "
+            "and provide the new URL. Then use switch_model to work on the copy."
+        )
+    except Exception as e:
+        return _format_sheets_error(e, f"copying model as '{new_name}'")
+
+
+@tool
+def switch_model(spreadsheet_url: str) -> str:
+    """Switch the active spreadsheet model to a different URL.
+
+    All subsequent read/write tool calls will operate on the new spreadsheet.
+
+    Args:
+        spreadsheet_url: Full Google Sheets URL to switch to.
+
+    Returns:
+        Confirmation message.
+    """
+    global _current_spreadsheet_url
+    _current_spreadsheet_url = spreadsheet_url
+    _invalidate_cache()
+    return f"Switched to: {spreadsheet_url}"
+
+
 # Export the list of all tools for binding to agents
 ALL_TOOLS = [
     read_model_documentation,
@@ -947,6 +1163,9 @@ ALL_TOOLS = [
     find_date_column,
     find_date_range,
     find_metric_row,
+    add_strategic_outcomes_chart,
+    copy_model,
+    switch_model,
 ]
 
 READ_ONLY_TOOLS = [
@@ -962,6 +1181,7 @@ READ_ONLY_TOOLS = [
     find_date_column,
     find_date_range,
     find_metric_row,
+    add_strategic_outcomes_chart,
 ]
 
 @tool
@@ -1002,11 +1222,9 @@ def optimize_levers(
     except json.JSONDecodeError as e:
         return f"Invalid JSON: {e}"
 
-    sheets = get_sheets_client()
-    url = get_spreadsheet_url()
     main_tab = get_tab_name("main_monthly")
 
-    col_c_data = sheets.read_range(url, main_tab, "C1:C300")
+    col_c_data = _cached_metric_index("operations")
     row_index = {}
     for i, row_data in enumerate(col_c_data):
         if row_data:
@@ -1133,11 +1351,9 @@ def what_if_scenario(changes_json: str, read_metrics_json: str) -> str:
     except json.JSONDecodeError as e:
         return f"Invalid JSON: {e}"
 
-    sheets = get_sheets_client()
-    url = get_spreadsheet_url()
     main_tab = get_tab_name("main_monthly")
 
-    col_c_data = sheets.read_range(url, main_tab, "C1:C300")
+    col_c_data = _cached_metric_index("operations")
     row_index = {}
     for i, row_data in enumerate(col_c_data):
         if row_data:
@@ -1220,4 +1436,57 @@ GOAL_SEEK_TOOLS = [
     find_metric_row,
     optimize_levers,
     what_if_scenario,
+]
+
+
+# ---------------------------------------------------------------------------
+# Model Registry & Variance Analysis Tools
+# ---------------------------------------------------------------------------
+
+MODEL_REGISTRY = {
+    "budget": "https://docs.google.com/spreadsheets/d/1R5bsZE7rMN34CklY7qfCjLxfXX0uJXwAMWAdPF2bHmc/edit",
+    "base_case": "https://docs.google.com/spreadsheets/d/1yopikoACz8oY32Zv9FrGhb64_PlDwcO1e02WePBr4uM/edit",
+    "growth_case": "https://docs.google.com/spreadsheets/d/1i0Dc_AIYvROv_d9cjUF1A5bGrCEBkbggCWIaSLSKFbI/edit",
+    "cost_reduction_case": "https://docs.google.com/spreadsheets/d/19U-HhwNkK1SeSzdjW4qFS2sQoBLu9kb9iWBJLum_51w/edit",
+    "board_plan": "https://docs.google.com/spreadsheets/d/10AK2KBft_iUcFH8TaStAathdrlii2B5nKeoXDbGktn8/edit",
+}
+
+
+@tool
+def get_model_url(model_name: str) -> str:
+    """Look up the Google Sheets URL for a named production model.
+
+    Available model names: budget, base_case, growth_case,
+    cost_reduction_case, board_plan.
+
+    Args:
+        model_name: The model key (e.g., "growth_case").
+
+    Returns:
+        The spreadsheet URL, or an error if the name is not recognised.
+    """
+    key = model_name.strip().lower().replace(" ", "_")
+    url = MODEL_REGISTRY.get(key)
+    if url:
+        return url
+    return (
+        f"Model '{model_name}' not found. "
+        f"Available models: {', '.join(MODEL_REGISTRY.keys())}"
+    )
+
+
+VARIANCE_TOOLS = [
+    read_sheet_tab,
+    read_cell_value,
+    read_cell_formula,
+    read_range,
+    sum_range,
+    find_metric_row,
+    find_date_range,
+    find_date_column,
+    write_cell_value,
+    write_range_values,
+    write_to_audit_log,
+    switch_model,
+    get_model_url,
 ]

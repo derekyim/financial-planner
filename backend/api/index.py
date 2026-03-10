@@ -79,7 +79,7 @@ def _ensure_agent():
         credentials_path=creds_path,
         spreadsheet_url=spreadsheet_url,
         supervisor_model="claude-sonnet-4-5-20250929",
-        agent_model="claude-sonnet-4-5-20250929"
+        agent_model="claude-sonnet-4-5-20250929",
     )
     _agent_initialized = True
 
@@ -92,6 +92,20 @@ class ChatRequest(BaseModel):
     message: str
     thread_id: Optional[str] = None
     user_id: Optional[str] = "default_user"
+    spreadsheet_url: Optional[str] = None
+
+
+def _maybe_switch_model(spreadsheet_url: Optional[str]) -> None:
+    """Switch the agent's active spreadsheet if the request specifies a different one."""
+    if not spreadsheet_url:
+        return
+    from agents.tools import get_spreadsheet_url, switch_model
+    try:
+        current = get_spreadsheet_url()
+    except RuntimeError:
+        return
+    if spreadsheet_url != current:
+        switch_model.invoke(spreadsheet_url)
 
 
 @app.get("/")
@@ -103,6 +117,7 @@ def root():
 def chat_endpoint(request: ChatRequest):
     try:
         _ensure_agent()
+        _maybe_switch_model(request.spreadsheet_url)
 
         from agents.financial_agent import chat
 
@@ -126,6 +141,7 @@ def chat_stream_endpoint(request: ChatRequest):
     def generate():
         try:
             _ensure_agent()
+            _maybe_switch_model(request.spreadsheet_url)
             from agents.financial_agent import chat_stream
 
             #TODO: add better thinking streamer here.

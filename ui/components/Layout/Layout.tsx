@@ -16,7 +16,7 @@ import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import Badge from '@mui/material/Badge';
 import MenuIcon from '@mui/icons-material/Menu';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
+import RecentActorsIcon from '@mui/icons-material/RecentActors';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import FlagIcon from '@mui/icons-material/Flag';
 import BuildIcon from '@mui/icons-material/Build';
@@ -30,6 +30,8 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import TuneIcon from '@mui/icons-material/Tune';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import ChatIcon from '@mui/icons-material/Chat';
@@ -52,7 +54,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Agent', href: '/', icon: <SmartToyIcon /> },
+  { label: 'Agent', href: '/', icon: <RecentActorsIcon /> },
   { label: 'Idea', href: '/idea', icon: <LightbulbIcon /> },
   { label: 'Challenge', href: '/challenge', icon: <FlagIcon /> },
   { label: 'Solution', href: '/solution', icon: <BuildIcon /> },
@@ -74,6 +76,8 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Improvements', href: '/evals/improvements', icon: <TrendingUpIcon /> },
     ],
   },
+  { label: 'Variance Analysis', href: '/features/variance-analysis', icon: <CompareArrowsIcon /> },
+  { label: 'Outcome Optimization', href: '/features/outcome-optimization', icon: <TuneIcon /> },
 ];
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -142,7 +146,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const drawerContent = (
     <Box className={styles.drawerInner} data-tour="nav-sidebar">
       <Box className={styles.drawerHeader}>
-        <SmartToyIcon className={styles.drawerLogo} />
+        <Box className={styles.drawerLogo}>Dy</Box>
         <Typography variant="h6" className={styles.drawerTitle}>
           {APP_SHORT_NAME}
         </Typography>
@@ -266,6 +270,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           >
             <MenuIcon />
           </IconButton>
+          <Box className={styles.appBarLogo}>Dy</Box>
           <Typography variant="h6" noWrap className={styles.appTitle} sx={{ flexGrow: 1 }}>
             {APP_NAME}
           </Typography>
@@ -275,7 +280,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               <IconButton
                 onClick={() => setDebugOpen((prev) => !prev)}
                 aria-label="Toggle debug pane"
-                sx={{ color: debugOpen ? 'var(--GOOGLE-BLUE)' : 'var(--TEXT-SECONDARY)' }}
+                sx={{ color: debugOpen ? 'var(--DY-GOLD)' : 'var(--TEXT-SECONDARY)' }}
               >
                 <Badge
                   badgeContent={debugOpen ? 0 : logCount}

@@ -76,9 +76,9 @@ The architecture uses a multi-agent router at the front to determine the topic o
 ┌───────────────────────▼─────────────────────────────────┐
 │           Agent Orchestration (LangGraph)                │
 │              Supervisor / Planner                        │
-│  ┌────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │
-│  │ Recall │ │Goal Seek │ │Strategic │ │ Respond  │     │
-│  └────────┘ └──────────┘ └──────────┘ └──────────┘     │
+│  ┌────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐   │
+│  │ Recall │ │Goal Seek │ │Strategic │ │Presentation│   │
+│  └────────┘ └──────────┘ └──────────┘ └────────────┘   │
 └────┬──────────────┬──────────────┬──────────────────────┘
      │              │              │
 ┌────▼────┐  ┌──────▼──────┐  ┌───▼───────────────────┐
@@ -98,6 +98,7 @@ The architecture uses a multi-agent router at the front to determine the topic o
 | Calculation Engine | HyperFormula (Node.js) | Headless spreadsheet with ~400 built-in functions; runs goal seek scenarios in-memory |
 | Agent Orchestration | LangGraph | Native support for cyclic tool-calling loops, checkpointing, and memory stores |
 | Tools | Google Sheets API (gspread) | Direct programmatic access to read/write cells, formulas, and ranges |
+| Presentation | Google Slides API (google-api-python-client) | Programmatic slide creation for summarizing analysis in executive decks |
 | Embedding Model | text-embedding-3-small | Production OpenAI embedding model; 1536 dims, good cost/quality tradeoff |
 | Vector Database | Qdrant (in-memory) | Lightweight, no infrastructure needed; easy to swap to hosted Qdrant later |
 | Monitoring | LangSmith | First-party LangGraph tracing; shows full agent execution traces and tool calls |
@@ -110,7 +111,7 @@ The architecture uses a multi-agent router at the front to determine the topic o
 
 **RAG components:** The Strategic Guidance sub-agent uses a Qdrant vector store loaded with business knowledge documents (financial glossaries, Amazon/Shopify strategies, advertising playbooks, warehouse optimization guides). Documents are chunked with RecursiveCharacterTextSplitter (500 chars, 50 overlap) and embedded with text-embedding-3-small. On query, the top 5 relevant chunks are retrieved and injected into the agent's system prompt as grounding context. An advanced hybrid retrieval mode (BM25 + dense with Reciprocal Rank Fusion) is available via the `ADVANCED_RETRIEVAL` flag.
 
-**Agent components:** The supervisor routes to specialist agents (Recall, Goal Seek, Strategic, with Sensitivity, What-If, and Forecast planned for Demo Day) each backed by LangChain tools bound to the LLM. Tool-calling agents can read/write cells, trace formula chains, run sensitivity tables, and log to audit trails. Memory is managed across 5 types: short-term (conversation via LangGraph checkpointer), long-term (cross-session facts in InMemoryStore), semantic (embedding-indexed knowledge), episodic (timestamped past interactions), and procedural (agent playbooks).
+**Agent components:** The supervisor routes to specialist agents (Recall, Goal Seek, Strategic, and Presentation, with Sensitivity, What-If, and Forecast planned for Demo Day) each backed by LangChain tools bound to the LLM. Tool-calling agents can read/write cells, trace formula chains, run sensitivity tables, and log to audit trails. Memory is managed across 5 types: short-term (conversation via LangGraph checkpointer), long-term (cross-session facts in InMemoryStore), semantic (embedding-indexed knowledge), episodic (timestamped past interactions), and procedural (agent playbooks).
 
 ---
 
@@ -340,22 +341,24 @@ A multi-agent system built on LangGraph that connects to Google Sheets financial
 ```
 Next.js/React UI  -->  FastAPI Backend  -->  LangGraph Supervisor
                                                   |
-                            ┌─────────────┬───────┴──────┬──────────┐
-                          Recall     Goal Seek     Strategic     Respond
-                            |            |             |
-                       GSheets API  GSheets API   RAG + Tavily
-                                        |
-                                   CalcEngine
-                                  (HyperFormula)
+                      ┌──────────┬────────┬────────┴───────┬──────────────┬──────────┐
+                    Recall   Goal Seek  Strategic   Presentation   Variance     Respond
+                      |          |          |            |             |
+                 GSheets API  GSheets  RAG+Tavily   Slides API   GSheets API
+                      |          |                                 (2 models)
+                   Charts    CalcEngine
+                             (HyperFormula)
 ```
 
 **Agents:**
-- **Recall** — Reads model facts, metrics, and formula chains from Google Sheets
+- **Recall** — Reads model facts, metrics, and formula chains from Google Sheets; creates charts
 - **Goal Seek** — Finds optimal input values to hit target KPIs using the HyperFormula calc engine for fast in-memory optimization
 - **Strategic Guidance** — RAG over business knowledge base + Tavily web search for current trends
+- **Presentation** — Creates Google Slides decks summarizing conversation insights
+- **Variance** — Compares the current model (e.g., Budget) against another production model, reads 2026 data from both, and populates the Variance tab with values and analysis notes
 - **Respond** — Direct answers for simple queries
 
-**Key Technologies:** LangGraph, LangChain, OpenAI / Anthropic / Google Gemini (multi-provider via LLM factory), HyperFormula, Qdrant, RAGAS, Tavily, gspread, Next.js, Material UI
+**Key Technologies:** LangGraph, LangChain, OpenAI / Anthropic / Google Gemini (multi-provider via LLM factory), HyperFormula, Google Slides API, Qdrant, RAGAS, Tavily, gspread, Next.js, Material UI
 
 ### HyperFormula Calculation Engine
 
@@ -379,6 +382,223 @@ The Goal Seek agent is backed by an in-memory calculation engine powered by [Hyp
 | Risk to live model | High (writes to sheet) | Zero (read-only copy) |
 
 The calc engine also supports `what_if_scenario` for testing specific lever changes without touching the live spreadsheet. If the calc engine service isn't running, the Goal Seek agent automatically falls back to the original Google Sheets write/read/restore approach.
+
+#### Vercel Deployment
+
+On Vercel, the calc engine runs as a Node.js serverless function at `/api/calc/*` alongside the Python backend (`/api/*`) and Next.js frontend. The `vercel.json` configuration maps three routes:
+
+```
+/api/calc/*  →  calc-engine/api/index.ts  (@vercel/node)
+/api/*       →  backend/api/index.py      (@vercel/python)
+/*           →  ui/                       (@vercel/next)
+```
+
+The `CalcEngine` instance (HyperFormula) lives at module scope in the serverless function, so the loaded model persists across warm invocations within the same container. The Python backend reaches it via the `CALC_ENGINE_URL` environment variable.
+
+**Environment variable (Vercel):**
+```env
+CALC_ENGINE_URL=https://your-deployment.vercel.app/api/calc
+```
+
+**Cold-start caveat:** Vercel serverless functions are stateless across cold starts. The model loaded via `/api/calc/load` persists only while the function container stays warm (typically 5–15 minutes of inactivity). If the container goes cold, the in-memory HyperFormula model is lost. On the next request, the Python backend's agent initialization calls `_load_calc_engine`, which re-exports the operations tab from Google Sheets and sends it to `/api/calc/load` — this takes a few seconds but happens automatically. If the calc engine is unreachable or unloaded, `is_available()` returns `false` and the Goal Seek agent falls back to direct Google Sheets API calls (slower but functional).
+
+For local development, the calc engine runs as a standalone Express server on port 4100 and `CALC_ENGINE_URL` defaults to `http://localhost:4100`.
+
+### Chart Creation
+
+The Recall agent can create time-series line charts of Strategic Outcome metrics directly in the Google Sheet.
+
+**How it works:**
+
+```
+User: "Chart EBITDA and Cash from Jan-25 to Dec-27"
+              │
+         Supervisor → routes to Recall agent
+              │
+         Recall agent calls add_strategic_outcomes_chart tool
+              │
+   ┌──────────▼──────────────────────────────────┐
+   │  1. Read column A to find Strategic Outcome  │
+   │     markers and column C for metric names     │
+   │  2. Load the date spine from row 1            │
+   │  3. Resolve start/end date columns            │
+   │  4. Call Google Sheets API batchUpdate with    │
+   │     addChart request (LINE chart type)         │
+   │  5. Chart is placed on a "Charts" tab         │
+   └──────────────────────────────────────────────┘
+```
+
+Since gspread has no native chart support, the tool uses the raw Google Sheets API v4 `batchUpdate` endpoint with an `AddChartRequest`. Each metric becomes a separate line on the chart, with the date spine as the X-axis domain.
+
+**Tool:** `add_strategic_outcomes_chart`
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `metrics_csv` | Comma-separated metric names (empty = all Strategic Outcomes) | `"EBITDA,Cash,Gross Sales"` |
+| `start_date` | Optional start date | `"Jan-25"` |
+| `end_date` | Optional end date | `"Dec-27"` |
+| `chart_title` | Chart title | `"Strategic Outcomes Over Time"` |
+
+**Example prompts:**
+- "Chart the Strategic Outcomes over time"
+- "Add a chart of EBITDA and Cash from Jan-25 to Dec-27"
+- "Create a chart for all Strategic Outcomes"
+
+The chart appears on a **"Charts"** tab in the Google Sheet (created automatically if it doesn't exist).
+
+### Presentation Creation (Google Slides)
+
+A dedicated **Presentation agent** creates Google Slides decks summarizing financial insights from the conversation.
+
+**How it works:**
+
+```
+User: "Make a presentation about our cash flow forecast"
+              │
+         Supervisor → routes to Presentation agent
+              │
+   ┌──────────▼──────────────────────────────────────┐
+   │  1. Agent reviews conversation history for       │
+   │     insights, metrics, and recommendations       │
+   │  2. Plans a 4-7 slide deck structure             │
+   │  3. Calls slide tools to add each slide:         │
+   │     • add_title_slide → opening slide            │
+   │     • add_content_slide → narrative/analysis     │
+   │     • add_bullet_slide → metrics, action items   │
+   │  4. Google Slides API batchUpdate creates the    │
+   │     slides in the presentation at GOOGLE_SLIDES_URL│
+   └─────────────────────────────────────────────────┘
+```
+
+The agent uses the Google Slides API v1 via `google-api-python-client` with the same service account credentials used for Sheets. Slides are appended to the existing presentation (never replaced), so you can build up content across conversations.
+
+**Tools:**
+
+| Tool | Purpose | Key Parameters |
+|------|---------|----------------|
+| `add_title_slide` | Opening or section divider slides | `title`, `subtitle` |
+| `add_content_slide` | Narrative analysis with paragraph text | `title`, `body` |
+| `add_bullet_slide` | Lists of metrics, recommendations, or action items | `title`, `bullets` (list of strings) |
+| `get_presentation_info` | Check current slide count | — |
+
+**Setup:**
+
+1. Add `GOOGLE_SLIDES_URL` to your `.env` file:
+   ```env
+   GOOGLE_SLIDES_URL=https://docs.google.com/presentation/d/YOUR_PRESENTATION_ID
+   ```
+2. Share the Google Slides presentation with your service account email (Editor access)
+3. The presentation tools initialize automatically on agent startup
+
+**Example prompts:**
+- "Make a presentation about our EBITDA forecast"
+- "Create a slide deck summarizing our cash flow analysis"
+- "Build a presentation with the key findings from this conversation"
+
+### Multi-Model Variance Analysis
+
+The **Variance agent** compares two financial models side-by-side and produces a standard YTD 2026 Financial Variance Report. Starting from the active model (e.g., Budget), the agent reads 2026 data from both models and populates the existing **Variance** tab with actual values, computed variances, and written analysis notes.
+
+**How it works:**
+
+```
+User: "Run a variance analysis vs Growth Case"
+              │
+         Supervisor → routes to Variance agent
+              │
+   ┌──────────▼──────────────────────────────────────────┐
+   │  1. Read Variance tab template from the current      │
+   │     model to identify metric names and layout        │
+   │  2. Gather 2026 values from the current model's      │
+   │     operations tab for each metric                   │
+   │  3. switch_model to the comparison model and gather  │
+   │     the same 2026 values from its operations tab     │
+   │  4. Switch back to the current model                 │
+   │  5. Write values to column E ("This Model")          │
+   │  6. Calculate $ and % variances, write analysis      │
+   │     notes for each metric                            │
+   │  7. Log the action to the AuditLog                   │
+   └─────────────────────────────────────────────────────┘
+```
+
+Five production models are pre-loaded in the UI's Model Picker and registered in the backend's `MODEL_REGISTRY`, so users can refer to them by name:
+
+| Model | Description |
+|-------|-------------|
+| Budget | Primary operating budget |
+| Base Case | Baseline forecast |
+| Growth Case | Aggressive growth scenario |
+| Cost Reduction | Cost optimization scenario |
+| Board Plan | Board-approved plan |
+
+**Example output:**
+
+| Metric | Budget | Growth Case | Variance ($) | Variance (%) |
+|--------|--------|-------------|--------------|--------------|
+| Gross Sales | $39.9M | $62.8M | +$22.9M | +57% |
+| Net Revenue | $36.1M | $56.7M | +$20.5M | +57% |
+| EBITDA | -$1.2M | $15.0M | +$16.2M | +1,318% |
+| Orders | 284K | 425K | +141K | +50% |
+
+**Example prompts:**
+- "Run a variance analysis vs Growth Case"
+- "Compare budget against the Board Plan"
+- "How does the budget compare to the cost reduction case?"
+- "Fill in the Variance tab comparing to base case"
+
+### Outcome Optimization (Goal Seek)
+
+The **Goal Seek agent** acts as a financial optimizer — similar to Excel's Solver but powered by the in-memory HyperFormula calculation engine. Given a target Strategic Outcome and a set of Business Levers to vary, it tests hundreds of scenarios in under a second and returns ranked solutions.
+
+**How it works:**
+
+```
+User: "What combinations of CaC, Ad Spend, and AoV get me to $1M EBITDA by Dec 2027?"
+              │
+         Supervisor → routes to Goal Seek agent
+              │
+   ┌──────────▼──────────────────────────────────────────┐
+   │  1. Parse the goal into objective metric, target     │
+   │     value, and time period                           │
+   │  2. Look up the row/column for each Business Lever   │
+   │     and Strategic Outcome in the model               │
+   │  3. Read current values to establish the baseline    │
+   │  4. Define lever ranges (typically ±25–50%)          │
+   │  5. Call optimize_levers → HyperFormula engine       │
+   │     tests 500–800 scenarios via Latin hypercube      │
+   │     sampling in ~150ms                               │
+   │  6. Present top feasible solutions ranked by         │
+   │     objective value                                  │
+   │  7. Wait — no writes are made unless the user        │
+   │     explicitly asks to implement a solution          │
+   └─────────────────────────────────────────────────────┘
+```
+
+The optimizer runs entirely in memory using a copy of the spreadsheet's formula graph — **no writes are made to the live Google Sheet**. Changes are only applied when the user explicitly asks to implement a solution.
+
+**Performance:**
+
+| Aspect | Before (Sheets API) | After (HyperFormula) |
+|--------|---------------------|----------------------|
+| Scenarios tested | ~15 (rate-limited) | 500–800 (in-memory) |
+| Time per optimization | 30–60 seconds | 100–200ms |
+| API calls | ~100 per request | 2–3 (one-time load) |
+| Risk to live model | High (writes to sheet) | Zero (read-only copy) |
+
+**Example solution output:**
+
+| Lever | Solution 1 | Solution 2 | Solution 3 |
+|-------|-----------|-----------|-----------|
+| CaC | $39.15 (-10%) | $41.33 (-5%) | $43.50 (unchanged) |
+| Ad Spend | $132K (+10%) | $120K (unchanged) | $108K (-10%) |
+| AoV | $79.17 (+5%) | $75.40 (unchanged) | $86.71 (+15%) |
+| **EBITDA Result** | **$1.61M** | **$1.12M** | **$1.45M** |
+
+**Example prompts:**
+- "What combinations of CaC, Ad Spend, and AoV get me to $1M EBITDA by Dec 2027?"
+- "How can I increase Gross Sales by 20% while keeping Cash above $500K?"
+- "Optimize for maximum EBITDA by Q4 2026"
+- "Find the best lever combination to hit $2M revenue with CaC under $40"
 
 ## Test it out
 What combinations of CaC, Ad Spend, and AoV get me to $1M EBITDA by Dec 2027?
@@ -406,6 +626,7 @@ TAVILY_API_KEY=tvly-...
 GOOGLE_CREDENTIALS_PATH=credentials.json
 SPREADSHEET_URL=https://docs.google.com/yoursheet
 CALC_ENGINE_URL=http://localhost:4100  # optional, defaults to localhost:4100
+GOOGLE_SLIDES_URL=https://docs.google.com/presentation/d/YOUR_ID  # optional, for presentation agent
 LANGCHAIN_API_KEY=lsv2-...        # optional, for LangSmith tracing
 LANGCHAIN_TRACING_V2=true          # optional
 ADVANCED_RETRIEVAL=false           # set to true for hybrid BM25+dense retrieval
@@ -493,11 +714,12 @@ backend/
     calc_client.py       # HTTP client for the HyperFormula calc engine
     rag_pipeline.py      # RAG pipeline (dense + hybrid retrieval)
     playbooks.py         # Agent system prompts
-    tools.py             # Google Sheets tools + optimize_levers, what_if_scenario
+    tools.py             # Google Sheets tools + optimize_levers, what_if_scenario, charts
     strategic_tools.py   # Tavily web search tool
+    presentation_tools.py # Google Slides tools (add slides, bullet slides, etc.)
     memory_types.py      # 5 memory types
   evals/             # RAGAS evaluation framework
-  shared/            # Shared utilities (sheets_utilities, config)
+  shared/            # Shared utilities (sheets_utilities, slides_utilities, config)
   test_data/         # Manual test cases for evaluation
   tests/             # Unit tests
   integration_tests/ # Integration tests (live APIs)
@@ -506,10 +728,12 @@ backend/
   docs/              # Project documentation
 
 calc-engine/         # HyperFormula calculation engine (Node.js)
+  api/
+    index.ts         # Vercel serverless function entry point
   src/
     engine.ts        # HyperFormula wrapper (load, set, recalculate, read)
     optimizer.ts     # Latin hypercube sampling optimizer
-    server.ts        # Express API (/load, /calculate, /optimize)
+    server.ts        # Express API for local dev (/load, /calculate, /optimize)
 
 ui/
   pages/             # Next.js pages (chat, docs, evals)

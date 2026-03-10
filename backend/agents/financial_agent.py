@@ -33,10 +33,12 @@ from agents.tools import (
     READ_ONLY_TOOLS,
     GOAL_SEEK_TOOLS,
     ALL_TOOLS,
+    VARIANCE_TOOLS,
     read_model_documentation,
     write_to_audit_log,
 )
 from agents.strategic_tools import STRATEGIC_TOOLS
+from agents.presentation_tools import PRESENTATION_TOOLS, initialize_presentation_tools
 from agents.memory_types import (
     ShortTermMemory,
     LongTermMemory,
@@ -49,6 +51,8 @@ from agents.playbooks import (
     RECALL_AGENT_PROMPT,
     GOAL_SEEK_AGENT_PROMPT,
     STRATEGIC_GUIDANCE_PROMPT,
+    PRESENTATION_AGENT_PROMPT,
+    VARIANCE_AGENT_PROMPT,
 )
 from agents.rag_pipeline import retrieve_context
 from agents.llm_factory import create_llm
@@ -81,7 +85,7 @@ class FinancialAgentState(TypedDict):
 
 class RouterOutput(BaseModel):
     """The supervisor's routing decision."""
-    next: Literal["recall", "goal_seek", "strategic", "respond"]
+    next: Literal["recall", "goal_seek", "strategic", "presentation", "variance", "respond"]
     reasoning: str
 
 
@@ -143,6 +147,8 @@ Based on this question, which specialist should handle it?
 - 'recall': For questions about metrics, formulas, model structure
 - 'goal_seek': For optimization, achieving targets, finding solutions
 - 'strategic': For business strategy advice, industry best practices, how to improve operations
+- 'presentation': For creating slide decks and presentations
+- 'variance': For variance analysis comparing the current model against another model
 - 'respond': If you can answer directly without specialist help
 
 DO NOT RESPOND WITH ANYTHING OTHER THAN THE SPECIALIST NAME AND YOUR REASONING."""),
@@ -180,19 +186,32 @@ DO NOT RESPOND WITH ANYTHING OTHER THAN THE SPECIALIST NAME AND YOUR REASONING."
 # Model Documentation Reader Node
 # -----------------------------------------------------------------------------
 
-def model_doc_reader_node(state: FinancialAgentState) -> dict:
-    """Read model documentation if not already cached.
+_model_doc_cache: dict = {"url": None, "content": None}
 
-    This node runs first to ensure we understand the model structure.
+
+def model_doc_reader_node(state: FinancialAgentState) -> dict:
+    """Read model documentation, using a module-level cache per spreadsheet URL.
+
+    The LangGraph initial state always sends model_documentation="" which
+    overwrites the checkpointed value, so we cache at the module level instead.
     """
-    if state.get("model_documentation"):
-        print("[Model Doc Reader] Documentation already cached, skipping.")
-        return {}
+    from agents.tools import get_spreadsheet_url
+    try:
+        current_url = get_spreadsheet_url()
+    except RuntimeError:
+        current_url = None
+
+    if (_model_doc_cache["content"]
+            and _model_doc_cache["url"] == current_url):
+        print("[Model Doc Reader] Using cached documentation (no API call).")
+        return {"model_documentation": _model_doc_cache["content"]}
 
     print("[Model Doc Reader] Reading model documentation...")
     try:
         doc_content = read_model_documentation.invoke({})
         print(f"[Model Doc Reader] Read {len(doc_content)} characters of documentation.")
+        _model_doc_cache["url"] = current_url
+        _model_doc_cache["content"] = doc_content
         return {"model_documentation": doc_content}
     except Exception as e:
         print(f"[Model Doc Reader] Error reading documentation: {e}")
@@ -371,6 +390,93 @@ DO NOT RESPOND WITH IF YOU ARE SEARCHING THE LAST 90 DAYS OF DATA.
 
 
 # -----------------------------------------------------------------------------
+# Presentation Agent Node
+# -----------------------------------------------------------------------------
+
+def create_presentation_node(llm: BaseChatModel, tools: list):
+    """Create the Presentation agent node.
+
+    Args:
+        llm: The LLM to use for the agent.
+        tools: Presentation tools (add_title_slide, add_content_slide, etc.).
+
+    Returns:
+        The presentation agent node function.
+    """
+    llm_with_tools = llm.bind_tools(tools)
+
+    def presentation_node(state: FinancialAgentState) -> dict:
+        """The presentation agent creates slides from conversation insights."""
+        print("[Presentation Agent] Processing request...")
+
+        model_docs = state.get("model_documentation", "")
+
+        conversation_summary = []
+        for msg in state["messages"]:
+            if isinstance(msg, HumanMessage):
+                conversation_summary.append(f"User: {msg.content}")
+            elif isinstance(msg, AIMessage) and msg.content:
+                text = _extract_text(msg.content)
+                if text and not (hasattr(msg, "tool_calls") and msg.tool_calls):
+                    conversation_summary.append(f"Assistant: {text[:500]}")
+
+        conv_text = "\n".join(conversation_summary[-10:])
+
+        system_content = f"""{PRESENTATION_AGENT_PROMPT}
+
+## Current Model Documentation
+{model_docs[:2000] if model_docs else "No model documentation loaded."}
+
+## Conversation Context
+{conv_text}
+"""
+
+        messages = [SystemMessage(content=system_content)] + state["messages"]
+        response = llm_with_tools.invoke(messages)
+
+        print("[Presentation Agent] Generated response.")
+        return {"messages": [response]}
+
+    return presentation_node
+
+
+# -----------------------------------------------------------------------------
+# Variance Analysis Agent Node
+# -----------------------------------------------------------------------------
+
+def create_variance_agent_node(llm: BaseChatModel, tools: list):
+    """Create the Variance Analysis agent node.
+
+    Args:
+        llm: The LLM to use for the agent.
+        tools: Variance analysis tools (read, write, switch_model, etc.).
+
+    Returns:
+        The variance agent node function.
+    """
+    llm_with_tools = llm.bind_tools(tools)
+
+    def variance_agent_node(state: FinancialAgentState) -> dict:
+        """The variance agent compares models and populates the Variance tab."""
+        print("[Variance Agent] Processing request...")
+
+        model_docs = state.get("model_documentation", "")
+        system_content = f"""{VARIANCE_AGENT_PROMPT}
+
+## Current Model Documentation
+{model_docs[:2000] if model_docs else "No model documentation loaded."}
+"""
+
+        messages = [SystemMessage(content=system_content)] + state["messages"]
+        response = llm_with_tools.invoke(messages)
+
+        print("[Variance Agent] Generated response.")
+        return {"messages": [response]}
+
+    return variance_agent_node
+
+
+# -----------------------------------------------------------------------------
 # Routing Logic
 # -----------------------------------------------------------------------------
 
@@ -437,12 +543,16 @@ def create_financial_agent(
     recall_node = create_recall_agent_node(agent_llm)
     goal_seek_node = create_goal_seek_agent_node(agent_llm)
     strategic_node = create_strategic_guidance_node(agent_llm, STRATEGIC_TOOLS)
+    presentation_node = create_presentation_node(agent_llm, PRESENTATION_TOOLS)
+    variance_node = create_variance_agent_node(agent_llm, VARIANCE_TOOLS)
     respond_node = create_respond_node(agent_llm)
 
     # Create tool nodes
     recall_tool_node = ToolNode(READ_ONLY_TOOLS)
     goal_seek_tool_node = ToolNode(GOAL_SEEK_TOOLS)
     strategic_tool_node = ToolNode(STRATEGIC_TOOLS)
+    presentation_tool_node = ToolNode(PRESENTATION_TOOLS)
+    variance_tool_node = ToolNode(VARIANCE_TOOLS)
 
     # Build the graph
     builder = StateGraph(FinancialAgentState)
@@ -456,6 +566,10 @@ def create_financial_agent(
     builder.add_node("goal_seek_tools", goal_seek_tool_node)
     builder.add_node("strategic", strategic_node)
     builder.add_node("strategic_tools", strategic_tool_node)
+    builder.add_node("presentation", presentation_node)
+    builder.add_node("presentation_tools", presentation_tool_node)
+    builder.add_node("variance", variance_node)
+    builder.add_node("variance_tools", variance_tool_node)
     builder.add_node("respond", respond_node)
 
     # Add edges
@@ -471,6 +585,8 @@ def create_financial_agent(
             "recall": "recall",
             "goal_seek": "goal_seek",
             "strategic": "strategic",
+            "presentation": "presentation",
+            "variance": "variance",
             "respond": "respond",
         },
     )
@@ -498,6 +614,22 @@ def create_financial_agent(
         {"tools": "strategic_tools", "end": END},
     )
     builder.add_edge("strategic_tools", "strategic")
+
+    # Presentation agent -> tools -> presentation (loop) or end
+    builder.add_conditional_edges(
+        "presentation",
+        should_continue_after_agent,
+        {"tools": "presentation_tools", "end": END},
+    )
+    builder.add_edge("presentation_tools", "presentation")
+
+    # Variance agent -> tools -> variance (loop) or end
+    builder.add_conditional_edges(
+        "variance",
+        should_continue_after_agent,
+        {"tools": "variance_tools", "end": END},
+    )
+    builder.add_edge("variance_tools", "variance")
 
     # Direct response ends
     builder.add_edge("respond", END)
@@ -563,6 +695,12 @@ def setup_agent(
         "spreadsheet_url": spreadsheet_url,
     }
     print("Financial agent initialized successfully!")
+
+    try:
+        initialize_presentation_tools(credentials_path)
+        print("[Presentation] Slides tools initialized.")
+    except Exception as e:
+        print(f"[Presentation] Failed to initialize slides: {e}")
 
     _load_calc_engine(credentials_path, spreadsheet_url)
 

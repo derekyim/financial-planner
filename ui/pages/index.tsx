@@ -9,7 +9,6 @@ import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import SendIcon from '@mui/icons-material/Send';
 import CancelIcon from '@mui/icons-material/Cancel';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { APP_NAME, DEFAULT_MODEL, type SavedModel } from '@/constants';
 import ChatMessage from '@/components/ChatMessage/ChatMessage';
 import ThinkingBubble from '@/components/ThinkingBubble/ThinkingBubble';
@@ -133,6 +132,7 @@ export default function Home() {
         },
         sessionId,
         controller.signal,
+        activeModel.url || undefined,
       );
 
       setThinkingText(null);
@@ -185,11 +185,11 @@ export default function Home() {
       </Head>
 
       <Box className={styles.container}>
-        <Container maxWidth="md" className={styles.messagesContainer}>
+        <Container maxWidth="xl" className={styles.messagesContainer}>
           <Box className={styles.messages}>
             {messages.length === 0 && !thinkingText ? (
               <Box className={styles.welcome}>
-                <SmartToyIcon className={styles.welcomeIcon} />
+                <Box className={styles.welcomeIcon}>Dy</Box>
                 <Typography variant="h6" className={styles.welcomeTitle}>
                   {APP_NAME}
                 </Typography>
@@ -219,7 +219,7 @@ export default function Home() {
         </Container>
 
         <Paper className={styles.inputContainer} elevation={3}>
-          <Container maxWidth="md" className={styles.inputWrapper}>
+          <Container maxWidth="xl" className={styles.inputWrapper}>
             <ModelPicker activeModel={activeModel} onModelChange={setActiveModel} />
             <TextField
               fullWidth

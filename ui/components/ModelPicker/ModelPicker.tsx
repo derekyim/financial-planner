@@ -19,7 +19,7 @@ import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import CheckIcon from '@mui/icons-material/Check';
 import TableChartIcon from '@mui/icons-material/TableChart';
-import { DEFAULT_MODEL, MODELS_STORAGE_KEY, type SavedModel } from '@/constants';
+import { DEFAULT_MODEL, PRODUCTION_MODELS, MODELS_STORAGE_KEY, type SavedModel } from '@/constants';
 import styles from './ModelPicker.module.css';
 
 function loadSavedModels(): SavedModel[] {
@@ -113,7 +113,9 @@ export default function ModelPicker({ activeModel, onModelChange }: ModelPickerP
     }
   }
 
-  const allModels: SavedModel[] = [DEFAULT_MODEL, ...savedModels.filter((m) => m.url !== DEFAULT_MODEL.url)];
+  const prodUrls = new Set(PRODUCTION_MODELS.map((m) => m.url));
+  const customModels = savedModels.filter((m) => !prodUrls.has(m.url));
+  const allModels: SavedModel[] = [...PRODUCTION_MODELS, ...customModels];
   const isDefault = activeModel.url === DEFAULT_MODEL.url;
 
   return (

@@ -8,9 +8,20 @@
     {
       "src": "backend/api/index.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "calc-engine/api/index.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": "calc-engine/src/**"
+      }
     }
   ],
   "routes": [
+    {
+      "src": "/api/calc/(.*)",
+      "dest": "/calc-engine/api/index.ts?path=$1"
+    },
     {
       "src": "/api/(.*)",
       "dest": "/backend/api/index.py"

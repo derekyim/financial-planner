@@ -1,0 +1,61 @@
+#!/bin/bash
+set -e
+
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Usage: $0 <issue-number> <iterations>"
+  exit 1
+fi
+
+ISSUE="$1"
+ITERATIONS="$2"
+
+stream_text='select(.type == "assistant").message.content[]? | select(.type == "text").text // empty | gsub("\n"; "\r\n") | . + "\r\n\n"'
+final_result='select(.type == "result").result // empty'
+
+ISSUE_TITLE=$(gh issue view "$ISSUE" --json title -q '.title' 2>/dev/null || echo "")
+if [ -n "$ISSUE_TITLE" ]; then
+  ISSUE_SLUG="issue-$ISSUE-$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g; s/-\+/-/g; s/^-//; s/-$//' | cut -c1-50)"
+else
+  ISSUE_SLUG="issue-$ISSUE"
+fi
+
+PROMPT="Read GitHub issue #$ISSUE using gh cli for the PRD and progress (from comments). \
+ALWAYS make necessary research to understand the issue and the PRD before starting to work on it. \
+After completing your research, read and follow the TDD skill before writing any code. \
+IMPORTANT: You are ONLY working on issue #$ISSUE. Do NOT touch, modify, or address any other issues. \
+On first iteration: \
+  - After first commit, create a DRAFT PR that references issue #$ISSUE. \
+1. Find the highest-priority task IN ISSUE #$ISSUE and implement it using TDD. \
+2. Run your tests and type checks. \
+3. Commit your changes with a reference to issue #$ISSUE. \
+4. Push your changes to the PR branch. \
+5. Comment your progress on issue #$ISSUE using gh cli. \
+ONLY WORK ON A SINGLE TASK FROM ISSUE #$ISSUE. \
+CRITICAL: ONLY mark the PR ready and output <promise>COMPLETE</promise> if you are 100% CERTAIN that: \
+  - ALL tasks in the PRD are fully implemented and tested \
+  - All tests pass and type checks succeed \
+  - There are NO remaining tasks, bugs, or incomplete features \
+  - The issue requirements are COMPLETELY satisfied \
+If there is ANY doubt or remaining work, do NOT output COMPLETE."
+
+for ((i=1; i<=$ITERATIONS; i++)); do
+  tmpfile=$(mktemp)
+  trap "rm -f $tmpfile" EXIT
+
+  claude --dangerously-skip-permissions \
+    --worktree "cantemizyurek/$ISSUE_SLUG" \
+    --verbose \
+    -p \
+    --output-format stream-json \
+    "$PROMPT" \
+  | grep --line-buffered '^{' \
+  | tee "$tmpfile" \
+  | jq --unbuffered -rj "$stream_text"
+
+  result=$(jq -r "$final_result" "$tmpfile")
+
+  if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
+    echo "PRD complete after $i iterations."
+    exit 0
+  fi
+done

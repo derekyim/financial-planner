@@ -22,7 +22,12 @@ export type SavedModel = {
   url: string;
 };
 
-export const DEFAULT_MODEL: SavedModel = {
-  name: 'Powdered Drink City',
-  url: process.env.NEXT_PUBLIC_SPREADSHEET_URL || '',
-};
+export const PRODUCTION_MODELS: SavedModel[] = [
+  { name: 'Budget', url: 'https://docs.google.com/spreadsheets/d/1R5bsZE7rMN34CklY7qfCjLxfXX0uJXwAMWAdPF2bHmc/edit' },
+  { name: 'Base Case', url: 'https://docs.google.com/spreadsheets/d/1yopikoACz8oY32Zv9FrGhb64_PlDwcO1e02WePBr4uM/edit' },
+  { name: 'Growth Case', url: 'https://docs.google.com/spreadsheets/d/1i0Dc_AIYvROv_d9cjUF1A5bGrCEBkbggCWIaSLSKFbI/edit' },
+  { name: 'Cost Reduction', url: 'https://docs.google.com/spreadsheets/d/19U-HhwNkK1SeSzdjW4qFS2sQoBLu9kb9iWBJLum_51w/edit' },
+  { name: 'Board Plan', url: 'https://docs.google.com/spreadsheets/d/10AK2KBft_iUcFH8TaStAathdrlii2B5nKeoXDbGktn8/edit' },
+];
+
+export const DEFAULT_MODEL: SavedModel = PRODUCTION_MODELS[0];
