@@ -6,7 +6,15 @@ import urllib.error
 import json
 from typing import Any, Optional
 
-CALC_ENGINE_URL = os.getenv("CALC_ENGINE_URL", "http://localhost:4100")
+def _resolve_calc_url() -> str:
+    if os.getenv("CALC_ENGINE_URL"):
+        return os.environ["CALC_ENGINE_URL"]
+    vercel_url = os.getenv("VERCEL_URL")
+    if vercel_url:
+        return f"https://{vercel_url}/api/calc"
+    return "http://localhost:4100"
+
+CALC_ENGINE_URL = _resolve_calc_url()
 
 
 def _post(path: str, body: dict) -> dict:
