@@ -4,7 +4,6 @@ import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PersonIcon from '@mui/icons-material/Person';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { APP_SHORT_NAME } from '@/constants';
@@ -43,7 +42,7 @@ export default function ChatMessage({ message, isUser, timestamp }: ChatMessageP
       <Avatar 
         className={`${styles.avatar} ${isUser ? styles.avatarUser : styles.avatarAi}`}
       >
-        {isUser ? <PersonIcon /> : <SmartToyIcon />}
+        {isUser ? <PersonIcon /> : <Box sx={{ fontFamily: "'Georgia', serif", fontWeight: 700, fontSize: 14 }}>Dy</Box>}
       </Avatar>
       <Box className={styles.content}>
         <Typography 
